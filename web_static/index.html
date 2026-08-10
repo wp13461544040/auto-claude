@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClaudeX 管理面板</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            padding: 20px 30px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        
+        h1 {
+            font-size: 2em;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00ff88, #00cc88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0;
+        }
+        
+        .controls {
+            background: #1a1a1a;
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        
+        input[type="number"] {
+            padding: 8px 12px;
+            background: #0a0a0a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 0.95em;
+        }
+        
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #00ff88;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #000;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #444;
+        }
+        
+        .btn-secondary:hover:not(:disabled) {
+            background: #3d3d3d;
+        }
+        
+        .btn-danger {
+            background: #ff4444;
+            color: #fff;
+        }
+        
+        .btn-danger:hover:not(:disabled) {
+            background: #ff3333;
+        }
+        
+        .progress-container {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+            display: none;
+        }
+        
+        .progress-container.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #0a0a0a;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .logs {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        .log-line {
+            padding: 4px 0;
+            color: #888;
+        }
+        
+        .accounts-container {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #333;
+        }
+        
+        .accounts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+        
+        .accounts-header > div:first-child {
+            flex: 1;
+        }
+        
+        .accounts-header h2 {
+            color: #00ff88;
+            margin-bottom: 0;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            background: #2d2d2d;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #e0e0e0;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        .filter-btn.active {
+            background: #00ff88;
+            color: #000;
+            border-color: #00ff88;
+        }
+        
+        .accounts-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .accounts-table th {
+            background: #2d2d2d;
+            padding: 12px;
+            text-align: left;
+            color: #00ff88;
+            font-weight: 600;
+            border-bottom: 2px solid #444;
+        }
+        
+        .accounts-table td {
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .accounts-table tr:hover {
+            background: #1f1f1f;
+        }
+        
+        .accounts-table tr.used {
+            opacity: 0.5;
+        }
+        
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        
+        .badge-used {
+            background: #444;
+            color: #888;
+        }
+        
+        .badge-available {
+            background: #00ff88;
+            color: #000;
+        }
+        
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+        
+        .session-key-text:hover {
+            background: #1f1f1f;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #00ff88;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        /* 弹框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        /* 代理管理弹框层级更高 */
+        #proxy-modal {
+            z-index: 1100;
+        }
+        
+        /* 详情弹框（在代理管理之上） */
+        #modal {
+            z-index: 1200;
+        }
+        
+        .modal-content {
+            background: #1a1a1a;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #333;
+        }
+        
+        .modal-header h3 {
+            color: #00ff88;
+            margin: 0;
+        }
+        
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 1.5em;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            line-height: 30px;
+        }
+        
+        .modal-close:hover {
+            color: #fff;
+        }
+        
+        .modal-body {
+            color: #e0e0e0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.95em;
+            line-height: 1.6;
+            padding: 10px;
+            background: #0a0a0a;
+            border-radius: 6px;
+        }
+        
+        .modal-footer {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🦅 ClaudeX 管理面板</h1>
+            <div style="display: flex; gap: 20px; align-items: center; margin-top: 15px;">
+                <div style="color: #00ff88; font-size: 1.2em;">
+                    <strong id="total-accounts">0</strong> 个账号
+                    <span style="color: #888; margin-left: 10px;">可用 <strong style="color: #00ff88;" id="available-accounts">0</strong></span>
+                    <span style="color: #888; margin-left: 10px;">已用 <strong style="color: #666;" id="used-accounts">0</strong></span>
+                </div>
+                <div style="color: #666; font-size: 0.9em;">
+                    代理: <strong style="color: #00ff88;" id="proxy-count">0</strong> 个
+                </div>
+            </div>
+        </header>
+        
+        <div class="controls">
+            <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label for="register-count" style="margin: 0; color: #aaa;">注册数量</label>
+                    <input type="number" id="register-count" value="1" min="1" max="100" style="width: 80px; padding: 8px;">
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label for="concurrent" style="margin: 0; color: #aaa;">并发</label>
+                    <input type="number" id="concurrent" value="1" min="1" max="20" style="width: 60px; padding: 8px;">
+                </div>
+                <button class="btn-primary" onclick="startRegister()" id="register-btn">开始注册</button>
+                <button class="btn-secondary" onclick="checkAccounts()" id="check-btn">检查状态</button>
+                <button class="btn-secondary" onclick="refreshAccounts()">刷新</button>
+                <button class="btn-secondary" onclick="openProxyManager()" style="margin-left: auto;">🔧 代理管理</button>
+            </div>
+        </div>
+        
+        <div class="progress-container" id="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill">0%</div>
+            </div>
+            <div class="logs" id="logs"></div>
+        </div>
+        
+        <div class="accounts-container">
+            <div class="accounts-header">
+                <div>
+                    <h2>账号列表</h2>
+                    <div style="color: #666; font-size: 0.85em; margin-top: 5px;" id="last-refresh-time">
+                        最后检查: 未检查
+                    </div>
+                </div>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterAccounts('all')">全部</button>
+                    <button class="filter-btn" onclick="filterAccounts('available')">可用</button>
+                    <button class="filter-btn" onclick="filterAccounts('used')">已使用</button>
+                </div>
+            </div>
+            
+            <div id="accounts-list">
+                <div class="empty-state">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p>暂无账号数据</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 弹框 -->
+    <div id="modal" class="modal" onclick="if(event.target === this) closeModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">详情</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body" id="modal-body"></div>
+            <div class="modal-footer">
+                <button class="btn-primary btn-small" onclick="copyModalContent()">复制</button>
+                <button class="btn-secondary btn-small" onclick="closeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 代理管理弹框 -->
+    <div id="proxy-modal" class="modal" onclick="if(event.target === this) closeProxyManager()">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3>🔧 代理管理</h3>
+                <button class="modal-close" onclick="closeProxyManager()">×</button>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <textarea id="proxy-input" placeholder="每行一个代理&#10;格式: socks5h://user:pass@host:port" 
+                              style="flex: 1; min-height: 120px; padding: 10px; background: #0a0a0a; border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-family: monospace; font-size: 0.9em; resize: vertical;"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button class="btn-primary btn-small" onclick="uploadProxies()">上传代理</button>
+                    <button class="btn-secondary btn-small" onclick="loadProxies()">刷新列表</button>
+                    <button class="btn-secondary btn-small" onclick="testAllProxies()" id="test-proxy-btn">测试代理</button>
+                    <span style="color: #888; font-size: 0.85em; line-height: 32px;">当前启用: <strong style="color: #00ff88;" id="enabled-proxy-count">0</strong> 个</span>
+                </div>
+            </div>
+            <div style="max-height: 400px; overflow-y: auto; background: #0a0a0a; border-radius: 6px; padding: 10px;" id="proxy-list">
+                <p style="color: #666; text-align: center;">加载中...</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let accounts = [];
+        let currentFilter = 'all';
+        let statusCheckInterval = null;
+        let currentPage = 1;
+        let pageSize = 20; // 每页显示20条
+        let modalContent = ''; // 存储弹框内容用于复制
+        let proxies = []; // 代理列表
+        
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadConfig();
+            refreshAccounts();
+        });
+        
+        // 加载配置
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('register-count').value = result.data.default_count;
+                    document.getElementById('concurrent').value = result.data.default_concurrent;
+                    document.getElementById('proxy-count').textContent = result.data.proxy_count;
+                }
+            } catch (error) {
+                console.error('加载配置失败:', error);
+            }
+        }
+        
+        // 刷新账号列表
+        async function refreshAccounts() {
+            try {
+                const response = await fetch('/api/accounts');
+                const result = await response.json();
+                if (result.success) {
+                    accounts = result.data;
+                    updateStats();
+                    renderAccounts();
+                }
+            } catch (error) {
+                console.error('刷新账号列表失败:', error);
+            }
+        }
+        
+        // 更新统计数据
+        function updateStats() {
+            const total = accounts.length;
+            const used = accounts.filter(a => a.used).length;
+            const available = total - used;
+            
+            document.getElementById('total-accounts').textContent = total;
+            document.getElementById('available-accounts').textContent = available;
+            document.getElementById('used-accounts').textContent = used;
+            
+            // 显示最新的检查时间
+            const checked = accounts.filter(a => a.checked_at);
+            
+            if (checked.length > 0) {
+                // 找到最新的checked_at
+                checked.sort((a, b) => {
+                    return new Date(b.checked_at) - new Date(a.checked_at);
+                });
+                
+                const latestCheckStr = checked[0].checked_at;
+                
+                try {
+                    // Python的datetime.now().isoformat()生成的是本地时间，直接解析
+                    const localDate = new Date(latestCheckStr);
+                    
+                    const hours = String(localDate.getHours()).padStart(2, '0');
+                    const minutes = String(localDate.getMinutes()).padStart(2, '0');
+                    const seconds = String(localDate.getSeconds()).padStart(2, '0');
+                    
+                    document.getElementById('last-refresh-time').textContent = 
+                        `最后检查: ${hours}:${minutes}:${seconds}`;
+                } catch (e) {
+                    console.error('时间解析失败:', e);
+                    document.getElementById('last-refresh-time').textContent = 
+                        `最后检查: 解析失败`;
+                }
+            } else {
+                document.getElementById('last-refresh-time').textContent = 
+                    `最后检查: 未检查`;
+            }
+        }
+        
+        // 渲染账号列表
+        function renderAccounts() {
+            const container = document.getElementById('accounts-list');
+            
+            let filtered = accounts;
+            if (currentFilter === 'available') {
+                filtered = accounts.filter(a => !a.used);
+            } else if (currentFilter === 'used') {
+                filtered = accounts.filter(a => a.used);
+            }
+            
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                        <p>暂无账号数据</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 计算分页
+            const totalPages = Math.ceil(filtered.length / pageSize);
+            const startIndex = (currentPage - 1) * pageSize;
+            const endIndex = Math.min(startIndex + pageSize, filtered.length);
+            const pageData = filtered.slice(startIndex, endIndex);
+            
+            const html = `
+                <table class="accounts-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;">#</th>
+                            <th style="width: 180px;">邮箱</th>
+                            <th style="width: 100px;">IP类型</th>
+                            <th style="width: 140px;">注册时间</th>
+                            <th style="width: 140px;">检查时间</th>
+                            <th>SessionKey</th>
+                            <th style="width: 80px;">健康</th>
+                            <th style="width: 80px;">状态</th>
+                            <th style="width: 180px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${pageData.map((account, index) => {
+                            const realIndex = accounts.indexOf(account);
+                            const sessionKey = account.cookies?.sessionKey || 'N/A';
+                            const health = account.health || 'unknown';
+                            const healthIcon = health === 'healthy' ? '✓' : health === 'expired' ? '✗' : '?';
+                            const healthColor = health === 'healthy' ? '#00ff88' : health === 'expired' ? '#ff4444' : '#888';
+                            const healthText = health === 'healthy' ? '健康' : health === 'expired' ? '失效' : '未知';
+                            
+                            // 邮箱模糊处理：显示前3个字符 + *** + @后面域名也打码
+                            let maskedEmail = account.email || 'N/A';
+                            if (account.email && account.email.includes('@')) {
+                                const [localPart, domain] = account.email.split('@');
+                                
+                                // 本地部分：前3个字符 + ***
+                                let maskedLocal = '***';
+                                if (localPart.length > 3) {
+                                    maskedLocal = localPart.substring(0, 3) + '***';
+                                }
+                                
+                                // 域名部分：显示顶级域名，二级域名打码
+                                let maskedDomain = domain;
+                                if (domain.includes('.')) {
+                                    const domainParts = domain.split('.');
+                                    if (domainParts.length >= 2) {
+                                        // 只显示顶级域名（最后一部分），二级域名打码
+                                        const tld = domainParts[domainParts.length - 1]; // 顶级域名 (com, site, etc)
+                                        const sld = domainParts[domainParts.length - 2]; // 二级域名
+                                        
+                                        // 二级域名打码：显示前2个字符
+                                        let maskedSld = '***';
+                                        if (sld.length > 2) {
+                                            maskedSld = sld.substring(0, 2) + '***';
+                                        }
+                                        
+                                        maskedDomain = maskedSld + '.' + tld;
+                                    }
+                                }
+                                
+                                maskedEmail = maskedLocal + '@' + maskedDomain;
+                            }
+                            
+                            // SessionKey模糊处理：只显示前8位 + ...
+                            const maskedSessionKey = sessionKey !== 'N/A' ? sessionKey.substring(0, 8) + '...' : 'N/A';
+                            
+                            // 转换注册时间为本地时间 (UTC+8)
+                            let registeredTime = 'N/A';
+                            if (account.saved_at) {
+                                try {
+                                    const utcDate = new Date(account.saved_at);
+                                    // 转为+8时区
+                                    const offset = 8 * 60; // +8小时的分钟数
+                                    const localDate = new Date(utcDate.getTime() + offset * 60 * 1000);
+                                    
+                                    const year = localDate.getUTCFullYear();
+                                    const month = String(localDate.getUTCMonth() + 1).padStart(2, '0');
+                                    const day = String(localDate.getUTCDate()).padStart(2, '0');
+                                    const hours = String(localDate.getUTCHours()).padStart(2, '0');
+                                    const minutes = String(localDate.getUTCMinutes()).padStart(2, '0');
+                                    
+                                    registeredTime = `${year}-${month}-${day} ${hours}:${minutes}`;
+                                } catch (e) {
+                                    registeredTime = 'N/A';
+                                }
+                            }
+                            
+                            // 转换检查时间
+                            let checkedTime = 'N/A';
+                            if (account.checked_at) {
+                                try {
+                                    const checkDate = new Date(account.checked_at);
+                                    const year = checkDate.getFullYear();
+                                    const month = String(checkDate.getMonth() + 1).padStart(2, '0');
+                                    const day = String(checkDate.getDate()).padStart(2, '0');
+                                    const hours = String(checkDate.getHours()).padStart(2, '0');
+                                    const minutes = String(checkDate.getMinutes()).padStart(2, '0');
+                                    
+                                    checkedTime = `${year}-${month}-${day} ${hours}:${minutes}`;
+                                } catch (e) {
+                                    checkedTime = 'N/A';
+                                }
+                            }
+                            
+                            // 获取IP信息（兼容旧账号）
+                            const ipInfo = account.ip_info || {};
+                            const ipType = ipInfo.type || '未知';
+                            const ipTypeColor = ipType === '住宅IP' || ipType === '移动网络' ? '#00ff88' : 
+                                               ipType === '数据中心' || ipType === '代理/VPN' ? '#ff8800' : '#888';
+                            
+                            // IP详情（如果有ip_info才显示详情按钮）
+                            let ipCell = '';
+                            if (account.ip_info && Object.keys(account.ip_info).length > 0) {
+                                // 有IP信息，可点击查看
+                                const ipDetailsText = 
+                                    'IP地址: ' + (ipInfo.ip || 'N/A') + '\\n' +
+                                    'IP类型: ' + (ipInfo.type || 'N/A') + '\\n' +
+                                    '国家: ' + (ipInfo.country || 'N/A') + '\\n' +
+                                    '城市: ' + (ipInfo.city || 'N/A') + '\\n' +
+                                    'ISP: ' + (ipInfo.isp || 'N/A') + '\\n' +
+                                    '代理: ' + (ipInfo.proxy || 'N/A');
+                                
+                                ipCell = '<td style="font-size: 0.85em; cursor: pointer; color: ' + ipTypeColor + ';" ' +
+                                    'onclick="showModal(\'IP信息\', \'' + ipDetailsText.replace(/'/g, "\\'") + '\')" ' +
+                                    'title="点击查看详细信息">' +
+                                    ipType +
+                                '</td>';
+                            } else {
+                                // 旧账号，没有IP信息
+                                ipCell = '<td style="font-size: 0.85em; color: #666;">未知</td>';
+                            }
+                            
+                            return `
+                                <tr class="${account.used ? 'used' : ''}">
+                                    <td>${startIndex + index + 1}</td>
+                                    <td style="font-size: 0.85em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="点击查看完整邮箱">
+                                        <span style="cursor: pointer; color: #aaa;" onclick="toggleMask(this, '${account.email || 'N/A'}', '${maskedEmail}')">
+                                            ${maskedEmail}
+                                        </span>
+                                    </td>
+                                    ${ipCell}
+                                    <td style="font-size: 0.85em; color: #888;">
+                                        ${registeredTime}
+                                    </td>
+                                    <td style="font-size: 0.85em; color: #888;">
+                                        ${checkedTime}
+                                    </td>
+                                    <td style="font-family: monospace; font-size: 0.85em;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <span class="session-key-text" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; user-select: none; color: #aaa;" 
+                                                  onclick="toggleMask(this, '${sessionKey}', '${maskedSessionKey}')" 
+                                                  title="点击查看完整SessionKey">
+                                                ${maskedSessionKey}
+                                            </span>
+                                            <button class="btn-secondary btn-small" onclick="copySessionKey('${sessionKey}', event)" title="复制完整SessionKey">
+                                                📋
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span style="color: ${healthColor}; font-weight: 600; font-size: 0.9em;">
+                                            ${healthIcon} ${healthText}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge ${account.used ? 'badge-used' : 'badge-available'}">
+                                            ${account.used ? '已用' : '可用'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn-secondary btn-small" onclick="checkSingleAccount(${realIndex})" title="检查此账号状态">检查</button>
+                                            ${!account.used ? 
+                                                `<button class="btn-secondary btn-small" onclick="markAccount(${realIndex})">标记</button>` :
+                                                `<button class="btn-secondary btn-small" onclick="unmarkAccount(${realIndex})">取消</button>`
+                                            }
+                                            <button class="btn-danger btn-small" onclick="deleteAccount(${realIndex})">删除</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding: 15px; background: #0a0a0a; border-radius: 8px;">
+                    <div style="color: #888; font-size: 0.9em;">
+                        显示 ${startIndex + 1}-${endIndex} / 共 ${filtered.length} 条
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="btn-secondary btn-small" onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''}>首页</button>
+                        <button class="btn-secondary btn-small" onclick="changePage(currentPage - 1)" ${currentPage === 1 ? 'disabled' : ''}>上一页</button>
+                        <div style="color: #00ff88; font-weight: 600; padding: 0 15px;">
+                            ${currentPage} / ${totalPages}
+                        </div>
+                        <button class="btn-secondary btn-small" onclick="changePage(currentPage + 1)" ${currentPage === totalPages ? 'disabled' : ''}>下一页</button>
+                        <button class="btn-secondary btn-small" onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>末页</button>
+                        <select onchange="changePageSize(this.value)" style="padding: 6px 10px; background: #1a1a1a; border: 1px solid #444; border-radius: 4px; color: #e0e0e0; margin-left: 10px;">
+                            <option value="10" ${pageSize === 10 ? 'selected' : ''}>10条/页</option>
+                            <option value="20" ${pageSize === 20 ? 'selected' : ''}>20条/页</option>
+                            <option value="50" ${pageSize === 50 ? 'selected' : ''}>50条/页</option>
+                            <option value="100" ${pageSize === 100 ? 'selected' : ''}>100条/页</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // 过滤账号
+        function filterAccounts(filter) {
+            currentFilter = filter;
+            currentPage = 1; // 重置到第一页
+            
+            // 更新按钮状态
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            renderAccounts();
+        }
+        
+        // 切换页码
+        function changePage(page) {
+            currentPage = page;
+            renderAccounts();
+            // 滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // 改变每页显示条数
+        function changePageSize(size) {
+            pageSize = parseInt(size);
+            currentPage = 1; // 重置到第一页
+            renderAccounts();
+        }
+        
+        // 显示弹框
+        function showModal(title, content) {
+            modalContent = content;
+            document.getElementById('modal-title').textContent = title;
+            
+            document.getElementById('modal-body').textContent = content;
+            
+            document.getElementById('modal').classList.add('active');
+        }
+        
+        // 关闭弹框
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+        
+        // 复制弹框内容
+        function copyModalContent() {
+            const textarea = document.createElement('textarea');
+            textarea.value = modalContent;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                // 临时修改按钮文字
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '已复制';
+                btn.style.background = '#00ff88';
+                btn.style.color = '#000';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 1000);
+            } catch (err) {
+                alert('复制失败');
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+        
+        // 切换显示/隐藏（通用函数，用于邮箱和SessionKey）- 改为弹框显示
+        function toggleMask(element, fullText, maskedText) {
+            // 判断是邮箱还是SessionKey
+            const isEmail = fullText.includes('@');
+            const title = isEmail ? '完整邮箱' : '完整SessionKey';
+            
+            // 如果是SessionKey，加上前缀
+            const displayContent = isEmail ? fullText : 'sessionKey:' + fullText;
+            
+            showModal(title, displayContent);
+        }
+        
+        // 打开代理管理
+        function openProxyManager() {
+            document.getElementById('proxy-modal').classList.add('active');
+            loadProxies();
+        }
+        
+        // 关闭代理管理
+        function closeProxyManager() {
+            document.getElementById('proxy-modal').classList.remove('active');
+        }
+        
+        // 加载代理列表
+        async function loadProxies() {
+            try {
+                const response = await fetch('/api/proxies');
+                const result = await response.json();
+                
+                if (result.success) {
+                    proxies = result.data;
+                    document.getElementById('enabled-proxy-count').textContent = result.enabled_count;
+                    renderProxyList();
+                } else {
+                    document.getElementById('proxy-list').innerHTML = 
+                        `<p style="color: #ff4444; text-align: center;">加载失败: ${result.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('proxy-list').innerHTML = 
+                    `<p style="color: #ff4444; text-align: center;">加载失败: ${error.message}</p>`;
+            }
+        }
+        
+        // 渲染代理列表
+        function renderProxyList() {
+            const container = document.getElementById('proxy-list');
+            
+            if (proxies.length === 0) {
+                container.innerHTML = '<p style="color: #666; text-align: center;">暂无代理</p>';
+                return;
+            }
+            
+            const html = proxies.map((p, index) => {
+                // 模糊显示代理
+                let maskedProxy = p.proxy;
+                if (p.proxy.includes('@')) {
+                    const parts = p.proxy.split('@');
+                    if (parts.length === 2) {
+                        const [protocol, host] = parts;
+                        // 隐藏用户名密码
+                        const protocolPart = protocol.split('://')[0];
+                        maskedProxy = `${protocolPart}://***:***@${host}`;
+                    }
+                }
+                
+                // 测试状态显示
+                let statusBadge = '';
+                if (p.testResult) {
+                    if (p.testResult.available) {
+                        // IP类型颜色
+                        const city = p.testResult.city || '未知';
+                        const type = p.testResult.type || '未知';
+                        const isp = p.testResult.isp || '未知';
+                        
+                        const typeColor = type === '住宅IP' ? '#00ff88' : 
+                                        type === '移动网络' ? '#00ccff' : '#ffaa00';
+                        
+                        statusBadge = `
+                            <div style="display: flex; gap: 15px; flex-wrap: wrap; font-size: 0.85em;">
+                                <span style="color: #00ff88;">✓ ${p.testResult.ip}</span>
+                                <span style="color: #888;">${p.testResult.country} - ${city}</span>
+                                <span style="color: ${typeColor};">类型: ${type}</span>
+                                <span style="color: #888;">延迟: ${p.testResult.latency}ms</span>
+                                <span style="color: #666; font-size: 0.9em;">${isp}</span>
+                            </div>
+                        `;
+                    } else {
+                        statusBadge = `<span style="color: #ff4444; font-size: 0.85em;">✗ ${p.testResult.error}</span>`;
+                    }
+                }
+                
+                return `
+                    <div style="display: flex; align-items: ${statusBadge ? 'flex-start' : 'center'}; padding: 10px; margin-bottom: 8px; background: ${p.enabled ? '#1a2d1a' : '#1a1a1a'}; border: 1px solid ${p.enabled ? '#00ff88' : '#333'}; border-radius: 6px;">
+                        <input type="checkbox" ${p.enabled ? 'checked' : ''} 
+                               onchange="toggleProxyStatus('${p.proxy.replace(/'/g, "\\'")}', this.checked)"
+                               style="width: 18px; height: 18px; cursor: pointer; margin-right: 12px; ${statusBadge ? 'margin-top: 2px;' : ''}">
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                            <span style="font-family: monospace; font-size: 0.85em; color: ${p.enabled ? '#00ff88' : '#888'}; word-break: break-all;">
+                                ${maskedProxy}
+                            </span>
+                            ${statusBadge}
+                        </div>
+                        <button class="btn-secondary btn-small" onclick="showProxyDetail('${p.proxy.replace(/'/g, "\\'")}', event)" title="查看完整代理" style="margin-left: 10px; ${statusBadge ? 'margin-top: 2px;' : ''}">
+                            👁️
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            
+            container.innerHTML = html;
+        }
+        
+        // 上传代理
+        async function uploadProxies() {
+            const input = document.getElementById('proxy-input').value.trim();
+            
+            if (!input) {
+                alert('请输入代理列表');
+                return;
+            }
+            
+            const proxyLines = input.split('\n').map(line => line.trim()).filter(line => line && !line.startsWith('#'));
+            
+            if (proxyLines.length === 0) {
+                alert('没有有效的代理');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/proxies', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ proxies: proxyLines })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`成功上传 ${result.count} 个代理`);
+                    document.getElementById('proxy-input').value = '';
+                    loadProxies();
+                    loadConfig(); // 刷新主页代理数量
+                } else {
+                    alert('上传失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('上传失败: ' + error.message);
+            }
+        }
+        
+        // 切换代理启用状态
+        async function toggleProxyStatus(proxy, enable) {
+            try {
+                const response = await fetch('/api/proxies/toggle', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ proxy, enable })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    loadProxies();
+                    loadConfig(); // 刷新主页代理数量
+                } else {
+                    alert('操作失败: ' + result.error);
+                    loadProxies(); // 恢复状态
+                }
+            } catch (error) {
+                alert('操作失败: ' + error.message);
+                loadProxies(); // 恢复状态
+            }
+        }
+        
+        // 显示代理详情
+        function showProxyDetail(proxy, event) {
+            event.stopPropagation();
+            showModal('完整代理', proxy);
+        }
+        
+        // 测试所有启用的代理
+        async function testAllProxies() {
+            const btn = document.getElementById('test-proxy-btn');
+            const originalText = btn.textContent;
+            
+            // 清除之前的测试结果
+            proxies.forEach(p => delete p.testResult);
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading"></span> 测试中...';
+                
+                const response = await fetch('/api/proxies/check', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (!result.success) {
+                    alert('测试失败: ' + result.error);
+                    return;
+                }
+                
+                console.log('测试结果:', result.data); // 调试用
+                
+                // 更新测试结果到proxies数组
+                result.data.forEach(testResult => {
+                    const proxy = proxies.find(p => p.proxy === testResult.proxy);
+                    if (proxy) {
+                        proxy.testResult = testResult;
+                        console.log('代理测试结果:', testResult); // 调试用
+                    }
+                });
+                
+                // 重新渲染列表显示测试结果
+                renderProxyList();
+                
+                // 显示汇总信息
+                const { available, unavailable, total } = result;
+                let message = `测试完成！\n\n`;
+                message += `可用: ${available} 个\n`;
+                message += `不可用: ${unavailable} 个\n`;
+                message += `总计: ${total} 个`;
+                alert(message);
+                
+            } catch (error) {
+                alert('测试失败: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+        
+        // 复制 SessionKey
+        function copySessionKey(sessionKey, event) {
+            event.stopPropagation();
+            
+            // 创建临时文本域
+            const textarea = document.createElement('textarea');
+            textarea.value = 'sessionKey:' + sessionKey;  // 带上前缀
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                // 显示复制成功提示
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓';
+                btn.style.background = '#00ff88';
+                btn.style.color = '#000';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                    btn.style.background = '';
+                    btn.style.color = '';
+                }, 1000);
+            } catch (err) {
+                alert('复制失败，请手动复制');
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        }
+        
+        // 标记账号
+        async function markAccount(index) {
+            try {
+                const response = await fetch(`/api/accounts/${index}/mark`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    refreshAccounts();
+                } else {
+                    alert('标记失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('标记失败: ' + error.message);
+            }
+        }
+        
+        // 检查单个账号
+        async function checkSingleAccount(index) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading"></span>';
+                
+                const response = await fetch(`/api/accounts/${index}/check`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    const { health, message } = result.data;
+                    const icon = health === 'healthy' ? '✅' : health === 'expired' ? '❌' : '⚠️';
+                    alert(`${icon} ${message}`);
+                    refreshAccounts(); // 刷新列表显示最新状态
+                } else {
+                    alert('检查失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('检查失败: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+        
+        // 取消标记
+        async function unmarkAccount(index) {
+            try {
+                const response = await fetch(`/api/accounts/${index}/unmark`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    refreshAccounts();
+                } else {
+                    alert('取消标记失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('取消标记失败: ' + error.message);
+            }
+        }
+        
+        // 删除账号
+        async function deleteAccount(index) {
+            if (!confirm('确定要删除这个账号吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/accounts/${index}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (result.success) {
+                    refreshAccounts();
+                } else {
+                    alert('删除失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('删除失败: ' + error.message);
+            }
+        }
+        
+        // 开始注册
+        async function startRegister() {
+            const count = parseInt(document.getElementById('register-count').value);
+            const concurrent = parseInt(document.getElementById('concurrent').value);
+            
+            if (count < 1 || count > 100) {
+                alert('注册数量必须在 1-100 之间');
+                return;
+            }
+            
+            if (concurrent < 1 || concurrent > 20) {
+                alert('并发数必须在 1-20 之间');
+                return;
+            }
+            
+            // 先检查代理
+            const btn = document.getElementById('register-btn');
+            btn.disabled = true;
+            btn.textContent = '检查代理...';
+            
+            try {
+                const checkResult = await checkProxiesBeforeRegister();
+                
+                btn.textContent = '开始注册';
+                
+                if (!checkResult.canContinue) {
+                    btn.disabled = false;
+                    return;
+                }
+                
+                // 继续注册
+                await doRegister(count, concurrent);
+                
+            } catch (error) {
+                alert('检查代理失败: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '开始注册';
+            }
+        }
+        
+        // 检查代理（注册前）
+        async function checkProxiesBeforeRegister() {
+            try {
+                const response = await fetch('/api/proxies/check', {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (!result.success) {
+                    alert('检查代理失败: ' + result.error);
+                    return { canContinue: false };
+                }
+                
+                const { data, available, unavailable, total } = result;
+                
+                if (total === 0) {
+                    const continueAnyway = confirm(
+                        '⚠️ 未配置代理\n\n' +
+                        '将使用直连方式注册，可能会被Claude限制。\n\n' +
+                        '是否继续？'
+                    );
+                    return { canContinue: continueAnyway };
+                }
+                
+                if (available === 0) {
+                    // 所有代理都不可用
+                    let message = `⚠️ 所有代理都不可用！\n\n`;
+                    data.forEach((p, i) => {
+                        // 模糊显示
+                        let masked = p.proxy;
+                        if (masked.includes('@')) {
+                            const parts = masked.split('@');
+                            masked = parts[0].split('://')[0] + '://***@' + parts[1];
+                        }
+                        message += `${i+1}. ${masked}\n   ✗ ${p.error}\n\n`;
+                    });
+                    message += '是否仍要继续注册？（将使用直连）';
+                    
+                    const continueAnyway = confirm(message);
+                    return { canContinue: continueAnyway };
+                }
+                
+                if (unavailable > 0) {
+                    // 部分代理不可用
+                    let message = `⚠️ 部分代理不可用\n\n`;
+                    message += `可用: ${available} 个\n`;
+                    message += `不可用: ${unavailable} 个\n\n`;
+                    
+                    const unavailableProxies = data.filter(p => !p.available);
+                    unavailableProxies.forEach((p, i) => {
+                        let masked = p.proxy;
+                        if (masked.includes('@')) {
+                            const parts = masked.split('@');
+                            masked = parts[0].split('://')[0] + '://***@' + parts[1];
+                        }
+                        message += `✗ ${masked}\n   ${p.error}\n\n`;
+                    });
+                    
+                    message += '是否继续注册？（将使用可用代理）';
+                    
+                    const continueAnyway = confirm(message);
+                    return { canContinue: continueAnyway };
+                }
+                
+                // 全部可用
+                console.log(`代理检查通过: ${available}/${total} 可用`);
+                return { canContinue: true };
+                
+            } catch (error) {
+                console.error('检查代理失败:', error);
+                const continueAnyway = confirm(
+                    '⚠️ 检查代理时出错\n\n' +
+                    error.message + '\n\n' +
+                    '是否仍要继续注册？'
+                );
+                return { canContinue: continueAnyway };
+            }
+        }
+        
+        // 执行注册
+        async function doRegister(count, concurrent) {
+            const btn = document.getElementById('register-btn');
+            
+            try {
+                btn.disabled = true;
+                btn.textContent = '启动中...';
+                document.getElementById('check-btn').disabled = true;
+                
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ count, concurrent })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('progress-container').classList.add('active');
+                    startStatusCheck();
+                } else {
+                    alert('启动失败: ' + result.error);
+                    btn.disabled = false;
+                    btn.textContent = '开始注册';
+                    document.getElementById('check-btn').disabled = false;
+                }
+            } catch (error) {
+                alert('启动失败: ' + error.message);
+                btn.disabled = false;
+                btn.textContent = '开始注册';
+                document.getElementById('check-btn').disabled = false;
+            }
+        }
+        
+        // 检查账号状态
+        async function checkAccounts() {
+            try {
+                document.getElementById('register-btn').disabled = true;
+                document.getElementById('check-btn').disabled = true;
+                
+                const response = await fetch('/api/check', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    document.getElementById('progress-container').classList.add('active');
+                    startStatusCheck();
+                } else {
+                    alert('启动失败: ' + result.error);
+                    document.getElementById('register-btn').disabled = false;
+                    document.getElementById('check-btn').disabled = false;
+                }
+            } catch (error) {
+                alert('启动失败: ' + error.message);
+                document.getElementById('register-btn').disabled = false;
+                document.getElementById('check-btn').disabled = false;
+            }
+        }
+        
+        // 测试出口IP
+        async function testExitIP() {
+            const btn = document.getElementById('test-ip-btn');
+            const originalText = btn.textContent;
+            
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="loading"></span> 测试中...';
+                
+                const response = await fetch('/api/test-ip');
+                const result = await response.json();
+                
+                if (result.success && result.data.success) {
+                    const d = result.data;
+                    const qualityIcon = d.quality === '高' ? '✅' : '⚠️';
+                    alert(
+                        `出口IP测试结果:\n\n` +
+                        `${qualityIcon} IP地址: ${d.ip}\n` +
+                        `地区: ${d.country} - ${d.city}\n` +
+                        `运营商: ${d.isp}\n` +
+                        `类型: ${d.type}\n` +
+                        `质量: ${d.quality}\n\n` +
+                        `代理: ${d.proxy_used}`
+                    );
+                } else {
+                    const error = result.data?.error || '测试失败';
+                    alert(`出口IP测试失败:\n\n${error}\n\n代理: ${result.data?.proxy_used || '未知'}`);
+                }
+            } catch (error) {
+                alert('测试失败: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+        
+        // 开始检查任务状态
+        function startStatusCheck() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+            
+            statusCheckInterval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/register/status');
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        updateProgress(result.data);
+                        
+                        if (!result.data.running) {
+                            clearInterval(statusCheckInterval);
+                            statusCheckInterval = null;
+                            document.getElementById('register-btn').disabled = false;
+                            document.getElementById('check-btn').disabled = false;
+                            refreshAccounts();
+                        }
+                    }
+                } catch (error) {
+                    console.error('获取状态失败:', error);
+                }
+            }, 500);
+        }
+        
+        // 更新进度
+        function updateProgress(status) {
+            const percent = status.total > 0 ? Math.round((status.progress / status.total) * 100) : 0;
+            const fill = document.getElementById('progress-fill');
+            fill.style.width = percent + '%';
+            fill.textContent = percent + '%';
+            
+            // 更新日志
+            const logsContainer = document.getElementById('logs');
+            logsContainer.innerHTML = status.logs.map(log => 
+                `<div class="log-line">${log}</div>`
+            ).join('');
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>

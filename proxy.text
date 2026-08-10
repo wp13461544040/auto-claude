@@ -1,0 +1,14 @@
+# 代理列表
+# 
+# 格式: socks5h://用户名:密码@主机:端口
+# 示例: socks5h://user:pass@proxy.example.com:1080
+#
+# 留空或注释所有行 = 直连(不使用代理)
+
+# socks5h://affg1232201-region-TW-sid-F2HddhQG-t-5:rz3txytq@sg2.cliproxy.io:3010
+# socks5h://affg1232201-region-TW-sid-rDE1rq4g-t-5:rz3txytq@sg2.cliproxy.io:3010
+# socks5h://affg1232201-region-TW-sid-3RfRziaw-t-5:rz3txytq@sg2.cliproxy.io:3010
+socks5h://affg1232201-region-TW-sid-w5tRUBSh-t-5:rz3txytq@sg2.cliproxy.io:3010
+socks5h://affg1232201-region-TW-sid-3k6dH8MY-t-5:rz3txytq@sg2.cliproxy.io:3010
+socks5h://affg1232201-region-TW-sid-nw9ppe1v-t-5:rz3txytq@sg2.cliproxy.io:3010
+
