@@ -16,13 +16,15 @@ ClaudeX 是一个用于批量注册 Claude 账号、保存会话状态并查询�
 
 ## 功能
 
-- 批量注册账号：生成域名邮箱、发送 Claude magic link、读取验证邮件、换取会话 Cookie。
-- 并发执行注册：通过 `-j/--concurrent` 控制并发数量。
-- 保存账号记录：默认写入 `accounts.json`。
-- 批量检查账号：读取账号 Cookie，查询账号状态、套餐和模型限制。
-- 支持代理：注册请求可通过 `PROXY` 配置代理。
-- 请求头自动生成：每个账号拥有稳定的请求身份标识和浏览器资料。
-- 可选 SEPA 工作流：使用 `register --sepa` 时，每个账号注册成功后立即处理订阅步骤。
+- **批量注册账号**：生成域名邮箱、发送 Claude magic link、读取验证邮件、换取会话 Cookie。
+- **Outlook 取件功能** ⭐: 支持 IMAP/Graph API 两种模式自动取件,验证码提取,支持代理。
+- **并发执行注册**：通过 `-j/--concurrent` 控制并发数量。
+- **保存账号记录**：默认写入 `accounts.json`。
+- **批量检查账号**：读取账号 Cookie，查询账号状态、套餐和模型限制。
+- **Web管理界面**：React构建的现代化Web界面，支持账号管理、代理配置、邮箱服务配置等。
+- **支持代理**：注册请求可通过 `PROXY` 配置代理。
+- **请求头自动生成**：每个账号拥有稳定的请求身份标识和浏览器资料。
+- **可选 SEPA 工作流**：使用 `register --sepa` 时，每个账号注册成功后立即处理订阅步骤。
 
 ## 版本检查
 
@@ -39,10 +41,20 @@ python main.py --version
 ```text
 .
 ├── main.py                 # CLI 入口
+├── web_server.py           # Web管理界面后端（Flask）
+├── start_web.bat           # Web服务器启动脚本（Windows）
 ├── requirements.txt        # Python 依赖
 ├── .env.example            # 环境变量示例
 ├── accounts.json           # 账号记录文件，本地敏感文件
+├── outlook_accounts.json   # Outlook 账号记录 ⭐
 ├── version.json            # 版本号与版本更新内容
+├── test_outlook_otp.py     # Outlook 取件测试工具 ⭐
+├── OUTLOOK_INTEGRATION.md  # Outlook 集成完整文档 ⭐
+├── QUICK_START_OUTLOOK.md  # Outlook 快速开始指南 ⭐
+├── web_static/             # Web前端资源
+│   ├── index.html          # 主页面
+│   ├── app.jsx             # React主应用
+│   └── components.jsx      # React组件库
 ├── core/                   # 共享基础能力
 │   ├── config.py           # 环境变量、请求头生成和代理配置
 │   ├── console.py          # 彩色终端日志
@@ -105,6 +117,33 @@ MOEMAIL_BASE_URL=https://your-moemail-instance.example.com
 Claude 服务地址、请求身份标识和浏览器资料均由代码管理，不接受 `.env` 覆盖。
 
 ## 使用方法
+
+### Web 管理界面（推荐）
+
+启动Web服务器：
+
+```bash
+python web_server.py
+```
+
+或使用快捷脚本（Windows）：
+
+```bash
+start_web.bat
+```
+
+然后在浏览器访问 `http://127.0.0.1:5000`
+
+#### Web界面功能
+
+- **账号管理**：查看、筛选、检查、标记、删除账号
+- **批量注册**：可视化配置注册数量和并发数，实时查看进度和日志
+- **账号检查**：批量检查所有账号健康状态
+- **代理管理**：上传、启用/禁用、测试代理，查看代理IP信息
+- **邮箱配置**：切换Moemail/Remail邮箱服务，配置API密钥和项目
+- **现代化UI**：基于React构建，暗色主题，响应式设计
+
+### CLI 命令行
 
 ### 注册账号
 
@@ -232,3 +271,102 @@ python -m ruff check main.py core account registration billing tests
 ## License
 
 本项目基于 [MIT License](LICENSE) 开源。
+
+
+---
+
+## Outlook 取件功能 ⭐
+
+ClaudeX 现在支持 Outlook 邮箱自动取件功能,可用于自动接收和提取验证码。
+
+### 核心特性
+
+- ✅ **双模式支持**: IMAP (XOAUTH2) 和 Microsoft Graph API
+- ✅ **自动 Token 刷新**: OAuth access_token 自动管理
+- ✅ **智能时间过滤**: 只检测最近 2 分钟内的邮件
+- ✅ **验证码自动提取**: 正则匹配 6 位数字
+- ✅ **代理支持**: 自动降级直连
+- ✅ **容错机制**: "not connected" 错误自动处理
+- ✅ **账号检测**: 自动识别已注册账号,支持登录 + 注册双模式 🆕
+
+### 快速开始
+
+#### 1. 添加 Outlook 账号
+
+```bash
+python test_outlook_otp.py add
+```
+
+输入格式:
+
+```text
+your-email@outlook.com----password----client-id----refresh-token----imap
+```
+
+#### 2. 等待验证码
+
+```bash
+# IMAP 模式
+python test_outlook_otp.py wait your-email@outlook.com
+
+# Graph API 模式 (推荐,速度快 50%)
+python test_outlook_otp.py wait your-email@outlook.com --mode graph
+```
+
+#### 3. Python API
+
+```python
+from registration.outlook_otp import wait_for_outlook_otp
+
+code = wait_for_outlook_otp(
+    email="user@outlook.com",
+    client_id="your-client-id",
+    refresh_token="your-refresh-token",
+    mode="graph",  # 推荐
+    timeout=120,
+    interval=5
+)
+
+print(f"验证码: {code}")
+```
+
+#### 4. Web API
+
+```bash
+curl -X POST http://localhost:5000/api/outlook/wait-otp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@outlook.com",
+    "client_id": "your-client-id",
+    "refresh_token": "your-refresh-token",
+    "mode": "graph",
+    "timeout": 120
+  }'
+```
+
+### 性能对比
+
+| 操作 | IMAP 模式 | Graph API 模式 |
+|------|----------|---------------|
+| 单次轮询 | ~5 秒 | ~1 秒 |
+| 平均取码时间 | 15-30 秒 | 10-20 秒 |
+
+**推荐使用 Graph API 模式,速度快 50%**
+
+### 完整文档
+
+- **快速开始**: [`QUICK_START_OUTLOOK.md`](./QUICK_START_OUTLOOK.md)
+- **完整文档**: [`OUTLOOK_INTEGRATION.md`](./OUTLOOK_INTEGRATION.md)
+- **账号检测**: [`ACCOUNT_DETECTION.md`](./ACCOUNT_DETECTION.md) 🆕
+- **测试工具**: `python test_outlook_otp.py --help`
+- **Web API**: 路由 `/api/outlook/*`
+
+### 文件说明
+
+- `registration/outlook_otp.py` - 核心取件模块
+- `account/storage.py` - Outlook 账号管理
+- `test_outlook_otp.py` - 命令行测试工具
+- `outlook_accounts.json` - Outlook 账号数据
+- `web_server.py` - Web API 接口
+
+---

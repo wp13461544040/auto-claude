@@ -18,8 +18,52 @@ def load_env(path=".env"):
 
 load_env()
 
-MOEMAIL_API_KEY  = os.environ.get("MOEMAIL_API_KEY", "")
-MOEMAIL_BASE_URL = os.environ.get("MOEMAIL_BASE_URL", "")
+# 动态获取配置的函数
+def get_moemail_api_key():
+    return os.environ.get("MOEMAIL_API_KEY", "")
+
+def get_moemail_base_url():
+    return os.environ.get("MOEMAIL_BASE_URL", "")
+
+def get_remail_api_key():
+    return os.environ.get("REMAIL_API_KEY", "")
+
+def get_remail_api_url():
+    return os.environ.get("REMAIL_API_URL", "https://remail.aishop6.com")
+
+def get_remail_project_id():
+    return int(os.environ.get("REMAIL_PROJECT_ID", "0"))
+
+def get_remail_product_id():
+    return int(os.environ.get("REMAIL_PRODUCT_ID", "0"))
+
+def get_remail_mode():
+    return os.environ.get("REMAIL_MODE", "package")
+
+def get_remail_suffix():
+    return os.environ.get("REMAIL_SUFFIX", "")
+
+def get_email_service():
+    """动态获取当前邮箱服务配置"""
+    return os.environ.get("EMAIL_SERVICE", "moemail")
+
+# 兼容旧代码的模块常量（使用时会是初始值，新代码应该用get_*函数）
+MOEMAIL_API_KEY  = get_moemail_api_key()
+MOEMAIL_BASE_URL = get_moemail_base_url()
+
+# Remail 邮箱配置
+REMAIL_API_KEY    = get_remail_api_key()
+REMAIL_API_URL    = get_remail_api_url()
+REMAIL_PROJECT_ID = get_remail_project_id()
+REMAIL_PRODUCT_ID = get_remail_product_id()
+REMAIL_MODE       = get_remail_mode()
+REMAIL_SUFFIX     = get_remail_suffix()
+
+# 邮箱服务选择: moemail 或 remail
+EMAIL_SERVICE = get_email_service()
+
+# Outlook注册单独保存的文件
+OUTLOOK_ACCOUNTS_FILE = os.environ.get("OUTLOOK_ACCOUNTS_FILE", "outlook_accounts.json")
 
 # 从 proxy.text 文件或环境变量读取代理
 def _load_proxies():

@@ -1,0 +1,948 @@
+/* ========== 全局样式 ========== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #0a0a0a;
+    color: #e0e0e0;
+    line-height: 1.6;
+}
+
+#root {
+    min-height: 100vh;
+}
+
+/* ========== 容器 ========== */
+.container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* ========== 头部 ========== */
+.header {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    padding: 20px 30px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+}
+
+.title {
+    font-size: 2em;
+    font-weight: 700;
+    background: linear-gradient(135deg, #00ff88, #00cc88);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0;
+}
+
+.stats-row {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+/* ========== 控制面板 ========== */
+.controls {
+    background: #1a1a1a;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid #333;
+}
+
+.controls-row {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ========== 输入框 ========== */
+.input {
+    padding: 8px 12px;
+    background: #0a0a0a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 0.95em;
+}
+
+.input:focus {
+    outline: none;
+    border-color: #00ff88;
+}
+
+/* ========== 按钮 ========== */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    color: #000;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 255, 136, 0.3);
+}
+
+.btn-secondary {
+    background: #2d2d2d;
+    color: #e0e0e0;
+    border: 1px solid #444;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: #3d3d3d;
+}
+
+.btn-danger {
+    background: #ff4444;
+    color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #ff3333;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.85em;
+}
+
+/* ========== 表格 ========== */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table-header {
+    background: #2d2d2d;
+    padding: 12px;
+    text-align: left;
+    color: #00ff88;
+    font-weight: 600;
+    border-bottom: 2px solid #444;
+}
+
+.table-cell {
+    padding: 12px;
+    border-bottom: 1px solid #333;
+}
+
+.row-used {
+    opacity: 0.5;
+}
+
+.table-row:hover {
+    background: #1f1f1f;
+}
+
+.table-row.used {
+    opacity: 0.5;
+}
+
+/* ========== 徽章 ========== */
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+    font-weight: 600;
+    display: inline-block;
+    transition: all 0.2s;
+}
+
+.badge.clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.badge.clickable:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.badge.clickable:active {
+    transform: scale(0.98);
+}
+
+.badge-used {
+    background: #444;
+    color: #888;
+}
+
+.badge-used.clickable:hover {
+    background: #555;
+    color: #aaa;
+}
+
+.badge-available {
+    background: #00ff88;
+    color: #000;
+}
+
+.badge-available.clickable:hover {
+    background: #00dd77;
+}
+
+/* ========== 账号容器 ========== */
+.accounts-container {
+    background: #1a1a1a;
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid #333;
+}
+
+.accounts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+/* ========== 筛选按钮 ========== */
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    background: #2d2d2d;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.filter-btn.active {
+    background: #00ff88;
+    color: #000;
+    border-color: #00ff88;
+}
+
+/* ========== 分页 ========== */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding: 15px;
+    background: #0a0a0a;
+    border-radius: 8px;
+}
+
+.pagination-info {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.pagination-btn {
+    padding: 6px 12px !important;
+    font-size: 0.85em !important;
+}
+
+.pagination-current {
+    color: #00ff88;
+    font-weight: 600;
+    padding: 0 15px;
+}
+
+.page-size-select {
+    padding: 6px 10px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    margin-left: 10px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: all 0.2s;
+}
+
+.page-size-select:hover {
+    border-color: #00ff88;
+}
+
+.page-size-select:focus {
+    outline: none;
+    border-color: #00ff88;
+    box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.1);
+}
+
+/* ========== 空状态 ========== */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+/* ========== 模态框 ========== */
+.modal-overlay {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: #1a1a1a;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #333;
+}
+
+.modal-title {
+    color: #00ff88;
+    margin: 0;
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    color: #888;
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+}
+
+.modal-close:hover {
+    color: #fff;
+}
+
+.modal-body {
+    color: #e0e0e0;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 0.95em;
+    line-height: 1.6;
+    padding: 10px;
+    background: #0a0a0a;
+    border-radius: 6px;
+    white-space: pre-wrap;
+}
+
+.modal-footer {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn-success {
+    background: #00ff88 !important;
+}
+
+/* ========== 悬浮进度窗口 ========== */
+.progress-window {
+    position: fixed;
+    background: #1a1a1a;
+    border: 2px solid #00ff88;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 255, 136, 0.3);
+    z-index: 9999;
+    overflow: hidden;
+    transition: width 0.3s ease, max-height 0.3s ease;
+}
+
+.progress-header {
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+}
+
+.progress-header.dragging {
+    cursor: grabbing;
+}
+
+.progress-header.draggable {
+    cursor: grab;
+}
+
+.progress-title {
+    color: #000;
+    font-weight: 600;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progress-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #000;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.progress-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.progress-btn {
+    background: transparent;
+    border: none;
+    color: #000;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 5px;
+    line-height: 1;
+}
+
+.progress-content {
+    padding: 15px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 30px;
+    background: #0a0a0a;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid #333;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00cc66);
+    transition: width 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 0.85em;
+    color: #888;
+}
+
+.progress-logs {
+    background: #0a0a0a;
+    padding: 10px;
+    border-radius: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8em;
+    border: 1px solid #333;
+}
+
+.log-line {
+    padding: 3px 0;
+    word-break: break-all;
+}
+
+.log-success { color: #00ff88; }
+.log-error { color: #ff4444; }
+.log-info { color: #888; }
+
+/* ========== 工具类 ========== */
+.flex { display: flex; }
+.flex-center { align-items: center; }
+.flex-between { justify-content: space-between; }
+.gap-8 { gap: 8px; }
+.gap-10 { gap: 10px; }
+.gap-15 { gap: 15px; }
+.gap-20 { gap: 20px; }
+.ml-auto { margin-left: auto; }
+
+.text-green { color: #00ff88; }
+.text-red { color: #ff4444; }
+.text-orange { color: #ff8800; }
+.text-gray { color: #888; }
+
+.font-mono { font-family: monospace; }
+.font-small { font-size: 0.85em; }
+.font-tiny { font-size: 0.8em; }
+
+/* ====== Proxy Manager ====== */
+.proxy-manager {
+    margin-bottom: 15px;
+}
+
+.proxy-input-section {
+    margin-bottom: 10px;
+}
+
+.proxy-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 10px;
+    background: #0a0a0a;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+    resize: vertical;
+}
+
+.proxy-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.proxy-count {
+    color: #888;
+    font-size: 0.85em;
+}
+
+.proxy-list {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #0a0a0a;
+    border-radius: 6px;
+    padding: 10px;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #666;
+}
+
+.status-dot.active {
+    background: #00ff88;
+}
+
+/* ====== Email Config ====== */
+.email-service-selector {
+    margin-bottom: 15px;
+}
+
+.service-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.service-btn {
+    padding: 8px 16px;
+    background: #2d2d2d;
+    border: 1px solid #444;
+    border-radius: 6px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: all 0.2s;
+}
+
+.service-btn.active {
+    background: #00ff88;
+    border-color: #00ff88;
+    color: #000;
+}
+
+.service-current {
+    margin-left: auto;
+    line-height: 32px;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.config-section {
+    background: #0a0a0a;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+}
+
+.config-title {
+    color: #00ff88;
+    margin-bottom: 10px;
+}
+
+.config-hint {
+    color: #666;
+    font-size: 0.85em;
+    margin-top: 10px;
+}
+
+.form-group {
+    margin-bottom: 10px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #00ff88;
+    font-weight: 600;
+}
+
+.form-label-sm {
+    display: block;
+    margin-bottom: 5px;
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.input-group {
+    display: flex;
+    gap: 10px;
+}
+
+.test-section {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.test-result {
+    line-height: 32px;
+    color: #666;
+    font-size: 0.85em;
+}
+
+.modal-actions {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* ====== Utility Classes ====== */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.copy-btn {
+    padding: 4px 8px;
+    background: #2d2d2d;
+    border: 1px solid #444;
+    border-radius: 4px;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 0.8em;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: #3d3d3d;
+    border-color: #00ff88;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-mono {
+    font-family: 'Courier New', monospace;
+}
+
+.text-danger {
+    color: #ff4444;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+
+/* ====== SessionKey Components ====== */
+.session-key-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.session-key-text {
+    cursor: pointer;
+    color: #00ff88;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+}
+
+.session-key-text:hover {
+    text-decoration: underline;
+}
+
+
+/* ====== 代理地址显示 ====== */
+.proxy-address {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    color: #e0e0e0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    max-width: 400px;
+}
+
+/* ====== 滚动条美化 ====== */
+/* WebKit浏览器（Chrome、Safari、新Edge） */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0a0a0a;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #00ff88;
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #333 #0a0a0a;
+}
+
+/* 特定容器滚动条增强 */
+.log-container::-webkit-scrollbar,
+.proxy-list::-webkit-scrollbar,
+.modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.log-container::-webkit-scrollbar-thumb,
+.proxy-list::-webkit-scrollbar-thumb,
+.modal-content::-webkit-scrollbar-thumb {
+    background: #444;
+}
+
+.log-container::-webkit-scrollbar-thumb:hover,
+.proxy-list::-webkit-scrollbar-thumb:hover,
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: #00ff88;
+}
+
+
+/* ====== 悬浮进度窗口 ====== */
+.floating-window {
+    position: fixed;
+    width: 450px;
+    max-height: 500px;
+    background: #1a1a1a;
+    border: 2px solid #00ff88;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 255, 136, 0.3);
+    z-index: 9999;
+    overflow: hidden;
+    transition: width 0.3s ease, max-height 0.3s ease;
+}
+
+.floating-window.minimized {
+    width: 300px;
+    max-height: 60px;
+}
+
+.floating-window.dragging {
+    cursor: grabbing;
+}
+
+.floating-header {
+    background: linear-gradient(135deg, #00ff88, #00cc66);
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: grab;
+    user-select: none;
+}
+
+.floating-header:active {
+    cursor: grabbing;
+}
+
+.floating-title {
+    color: #000;
+    font-weight: 600;
+    font-size: 0.95em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.floating-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.floating-btn {
+    background: transparent;
+    border: none;
+    color: #000;
+    cursor: pointer;
+    font-size: 1.2em;
+    padding: 0 5px;
+    line-height: 1;
+    transition: transform 0.2s;
+}
+
+.floating-btn:hover {
+    transform: scale(1.2);
+}
+
+.floating-content {
+    padding: 15px;
+}
+
+.pulse-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #000;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.progress-container {
+    width: 100%;
+    height: 30px;
+    background: #0a0a0a;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid #333;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00cc66);
+    transition: width 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    font-weight: 600;
+    font-size: 0.9em;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 0.85em;
+    color: #888;
+}
+
+.log-container {
+    background: #0a0a0a;
+    padding: 10px;
+    border-radius: 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8em;
+    border: 1px solid #333;
+}
+
+.log-empty {
+    color: #666;
+    text-align: center;
+    padding: 20px;
+}
+
+.log-line {
+    padding: 3px 0;
+    word-break: break-all;
+}
+
+.log-success {
+    color: #00ff88;
+}
+
+.log-error {
+    color: #ff4444;
+}
+
+.log-info {
+    color: #888;
+}

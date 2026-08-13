@@ -114,3 +114,118 @@ class AccountPool:
 
     def __len__(self):
         return len(self.accounts)
+
+
+# ============ Outlook 账号管理 ============
+
+def load_outlook_accounts(filepath="outlook_accounts.json"):
+    """加载 Outlook 账号列表"""
+    if not os.path.exists(filepath):
+        return []
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read().strip()
+    if not content:
+        return []
+    return json.loads(content)
+
+
+def save_outlook_account(account, filepath="outlook_accounts.json"):
+    """保存单个 Outlook 账号(追加)"""
+    lock = _get_lock(filepath)
+    with lock:
+        records = load_outlook_accounts(filepath)
+        records.append(account)
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(records, f, ensure_ascii=False, indent=2)
+
+
+def save_outlook_accounts(accounts, filepath="outlook_accounts.json"):
+    """批量保存 Outlook 账号(覆盖)"""
+    lock = _get_lock(filepath)
+    with lock:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(accounts, f, ensure_ascii=False, indent=2)
+
+
+def add_outlook_accounts(data, filepath="outlook_accounts.json"):
+    """
+    批量添加 Outlook 账号
+    
+    Args:
+        data: 多行文本,每行格式: email----password----client_id----refresh_token----mode
+        filepath: 保存文件路径
+    
+    Returns:
+        dict: {"added": 新增数, "total": 总数}
+    """
+    import time
+    
+    lines = [line.strip() for line in data.strip().split("\n") if line.strip()]
+    
+    existing = load_outlook_accounts(filepath)
+    existing_emails = {acc["email"] for acc in existing}
+    
+    added = 0
+    for line in lines:
+        parts = line.split("----")
+        if len(parts) < 4:
+            print_log(f"[Outlook] 格式错误,跳过: {line}")
+            continue
+        
+        email = parts[0].strip()
+        password = parts[1].strip()
+        client_id = parts[2].strip()
+        refresh_token = parts[3].strip()
+        mode = parts[4].strip() if len(parts) > 4 else "imap"
+        
+        if email in existing_emails:
+            print_log(f"[Outlook] 账号已存在,跳过: {email}")
+            continue
+        
+        account = {
+            "email": email,
+            "password": password,
+            "client_id": client_id,
+            "refresh_token": refresh_token,
+            "mode": mode,
+            "status": "active",
+            "added_at": time.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        
+        existing.append(account)
+        existing_emails.add(email)
+        added += 1
+        print_log(f"[Outlook] 添加账号: {email} ({mode}模式)")
+    
+    if added > 0:
+        save_outlook_accounts(existing, filepath)
+    
+    return {"added": added, "total": len(existing)}
+
+
+def get_outlook_account(email, filepath="outlook_accounts.json"):
+    """根据邮箱地址查找 Outlook 账号"""
+    accounts = load_outlook_accounts(filepath)
+    for acc in accounts:
+        if acc.get("email") == email:
+            return acc
+    return None
+
+
+def update_outlook_account(email, updates, filepath="outlook_accounts.json"):
+    """更新 Outlook 账号信息"""
+    lock = _get_lock(filepath)
+    with lock:
+        accounts = load_outlook_accounts(filepath)
+        matched = None
+        for acc in accounts:
+            if acc.get("email") == email:
+                acc.update(updates)
+                matched = acc
+                break
+        
+        if matched is None:
+            raise KeyError(f"Outlook账号不存在: {email}")
+        
+        save_outlook_accounts(accounts, filepath)
+        return matched

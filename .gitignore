@@ -3,6 +3,8 @@
 .env
 # 真实账号 session cookie
 accounts.json
+# Outlook账号单独保存
+outlook_accounts.json
 # 其他账号文件
 accounts*.json
 # 抓包文件可能含 cookie/token
