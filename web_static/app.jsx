@@ -219,13 +219,19 @@ const AccountsTable = ({ accounts, filter, onCheckAccount, onMarkAccount, onDele
                     <tr>
                         <th className="table-header" style={{ width: '40px' }}>#</th>
                         <th className="table-header" style={{ width: '160px' }}>邮箱</th>
-                        <th className="table-header" style={{ width: '140px' }}>账号密码</th>
+                        {accountType === 'outlook' && (
+                            <th className="table-header" style={{ width: '140px' }}>账号密码</th>
+                        )}
                         <th className="table-header" style={{ width: '90px' }}>IP类型</th>
                         <th className="table-header" style={{ width: '130px' }}>注册时间</th>
-                        <th className="table-header" style={{ width: '130px' }}>检查时间</th>
-                        <th className="table-header" style={{ width: '200px' }}>SessionKey</th>
-                        <th className="table-header" style={{ width: '70px' }}>健康</th>
-                        <th className="table-header" style={{ width: '70px' }}>状态</th>
+                        {accountType !== 'outlook' && (
+                            <>
+                                <th className="table-header" style={{ width: '130px' }}>检查时间</th>
+                                <th className="table-header" style={{ width: '200px' }}>SessionKey</th>
+                                <th className="table-header" style={{ width: '70px' }}>健康</th>
+                                <th className="table-header" style={{ width: '70px' }}>状态</th>
+                            </>
+                        )}
                         <th className="table-header" style={{ width: '180px' }}>操作</th>
                     </tr>
                 </thead>
@@ -250,100 +256,119 @@ const AccountsTable = ({ accounts, filter, onCheckAccount, onMarkAccount, onDele
                             <tr key={idx} className={account.used ? 'row-used' : ''}>
                                 <td className="table-cell">{startIndex + idx + 1}</td>
                                 <td className="table-cell">{maskEmail(account.email)}</td>
-                                <td className="table-cell">
-                                    <div className="session-key-row">
-                                        <button
-                                            className="copy-btn"
-                                            onClick={() => {
-                                                const fullEmail = account.email || account.email_address || 'N/A';
-                                                copyToClipboard(fullEmail);
-                                            }}
-                                            title="复制完整邮箱"
-                                            style={{ marginRight: '5px' }}
-                                        >
-                                            📧
-                                        </button>
-                                        <button
-                                            className="copy-btn"
-                                            onClick={() => {
-                                                const password = account.password || 'N/A';
-                                                copyToClipboard(password);
-                                            }}
-                                            title="复制密码"
-                                        >
-                                            🔑
-                                        </button>
-                                        <button
-                                            className="copy-btn"
-                                            onClick={() => {
-                                                const fullEmail = account.email || account.email_address || 'N/A';
-                                                const password = account.password || 'N/A';
-                                                copyToClipboard(`${fullEmail}\n${password}`);
-                                            }}
-                                            title="复制账号密码(两行)"
-                                            style={{ marginLeft: '5px' }}
-                                        >
-                                            📋
-                                        </button>
-                                    </div>
+                                {accountType === 'outlook' && (
+                                    <td className="table-cell">
+                                        <div className="session-key-row">
+                                            <button
+                                                className="copy-btn"
+                                                onClick={() => {
+                                                    const fullEmail = account.email || account.email_address || 'N/A';
+                                                    copyToClipboard(fullEmail);
+                                                }}
+                                                title="复制完整邮箱"
+                                                style={{ marginRight: '5px' }}
+                                            >
+                                                📧
+                                            </button>
+                                            <button
+                                                className="copy-btn"
+                                                onClick={() => {
+                                                    const password = account.password || 'N/A';
+                                                    copyToClipboard(password);
+                                                }}
+                                                title="复制密码"
+                                            >
+                                                🔑
+                                            </button>
+                                            <button
+                                                className="copy-btn"
+                                                onClick={() => {
+                                                    const fullEmail = account.email || account.email_address || 'N/A';
+                                                    const password = account.password || 'N/A';
+                                                    copyToClipboard(`${fullEmail}\n${password}`);
+                                                }}
+                                                title="复制账号密码(两行)"
+                                                style={{ marginLeft: '5px' }}
+                                            >
+                                                📋
+                                            </button>
+                                        </div>
+                                    </td>
+                                )}
+                                <td 
+                                    className="table-cell text-sm" 
+                                    style={{ 
+                                        color: ipTypeColor, 
+                                        cursor: 'pointer',
+                                        textDecoration: 'underline'
+                                    }}
+                                    onClick={() => onShowDetails('IP信息', account.ip_info)}
+                                    title="点击查看详细IP信息"
+                                >
+                                    {ipType}
                                 </td>
-                                <td className="table-cell text-sm" style={{ color: ipTypeColor }}>{ipType}</td>
                                 <td className="table-cell text-sm text-gray">
                                     {formatDateTime(account.saved_at)}
                                 </td>
-                                <td className="table-cell text-sm text-gray">
-                                    {formatDateTime(account.checked_at)}
-                                </td>
-                                <td className="table-cell">
-                                    <div className="session-key-row">
-                                        <span
-                                            className="session-key-text"
-                                            onClick={() => onShowDetails('SessionKey', sessionKey)}
-                                            title="点击查看完整SessionKey"
-                                        >
-                                            {sessionKey.slice(0, 12)}...
-                                        </span>
-                                        <button
-                                            className="copy-btn"
-                                            onClick={() => copyToClipboard('sessionKey=' + sessionKey)}
-                                            title="复制完整SessionKey"
-                                        >
-                                            📋
-                                        </button>
-                                    </div>
-                                </td>
-                                <td className="table-cell" style={{ color: healthColor }}>
-                                    {healthIcon} {healthText}
-                                </td>
-                                <td className="table-cell">
-                                    {account.used ? (
-                                        <span 
-                                            className="badge badge-used clickable" 
-                                            onClick={() => onMarkAccount(accountIndex, false)}
-                                            title="点击切换为未使用"
-                                        >
-                                            已使用
-                                        </span>
-                                    ) : (
-                                        <span 
-                                            className="badge badge-available clickable"
-                                            onClick={() => onMarkAccount(accountIndex, true)}
-                                            title="点击切换为已使用"
-                                        >
-                                            未使用
-                                        </span>
-                                    )}
-                                </td>
+                                {accountType !== 'outlook' && (
+                                    <>
+                                        <td className="table-cell text-sm text-gray">
+                                            {formatDateTime(account.checked_at)}
+                                        </td>
+                                        <td className="table-cell">
+                                            <div className="session-key-row">
+                                                <span
+                                                    className="session-key-text"
+                                                    onClick={() => onShowDetails('SessionKey', sessionKey)}
+                                                    title="点击查看完整SessionKey"
+                                                >
+                                                    {sessionKey.slice(0, 12)}...
+                                                </span>
+                                                <button
+                                                    className="copy-btn"
+                                                    onClick={() => copyToClipboard('sessionKey=' + sessionKey)}
+                                                    title="复制完整SessionKey"
+                                                >
+                                                    📋
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td className="table-cell" style={{ color: healthColor }}>
+                                            {healthIcon} {healthText}
+                                        </td>
+                                        <td className="table-cell">
+                                            {account.used ? (
+                                                <span 
+                                                    className="badge badge-used clickable" 
+                                                    onClick={() => onMarkAccount(accountIndex, false)}
+                                                    title="点击切换为未使用"
+                                                >
+                                                    已使用
+                                                </span>
+                                            ) : (
+                                                <span 
+                                                    className="badge badge-available clickable"
+                                                    onClick={() => onMarkAccount(accountIndex, true)}
+                                                    title="点击切换为已使用"
+                                                >
+                                                    未使用
+                                                </span>
+                                            )}
+                                        </td>
+                                    </>
+                                )}
                                 <td className="table-cell">
                                     <div className="action-buttons">
-                                        <Button
-                                            variant="secondary"
-                                            style={{ padding: '6px 12px', fontSize: '0.85em' }}
-                                            onClick={() => handleCheckAccount(accountIndex)}
-                                            disabled={isChecking}
-                                        >
-                                            {isChecking ? '检查中...' : '检查'}
-                                        </Button>
+                                        {accountType !== 'outlook' && (
+                                            <Button
+                                                variant="secondary"
+                                                style={{ padding: '6px 12px', fontSize: '0.85em' }}
+                                                onClick={() => handleCheckAccount(accountIndex)}
+                                                disabled={isChecking}
+                                            >
+                                                {isChecking ? '检查中...' : '检查'}
+                                            </Button>
+                                        )}
                                         <Button
                                             variant="danger"
                                             style={{ padding: '6px 12px', fontSize: '0.85em' }}
@@ -436,7 +461,7 @@ const App = () => {
     const [progressVisible, setProgressVisible] = useState(false);
     
     // 新增: 标签页状态
-    const [activeTab, setActiveTab] = useState('auto'); // auto(自动注册) / outlook(Outlook注册)
+    const [activeTab, setActiveTab] = useState('auto'); // auto(自动注册+账号列表) / outlook(Outlook)
     const [outlookConfig, setOutlookConfig] = useState(''); // Outlook配置文本框内容
     
     // 新增: Outlook账号列表
@@ -707,6 +732,71 @@ const App = () => {
         }
     }, [accounts, loadAccounts]);
     
+    // 删除已使用账号
+    const deleteUsedAccounts = useCallback(async () => {
+        const usedCount = accounts.filter(a => a.used === true).length;
+        
+        if (usedCount === 0) {
+            alert('没有已使用的账号需要删除');
+            return;
+        }
+        
+        const message = `确定要删除所有已使用的账号吗？共 ${usedCount} 个\n\n已使用账号是指状态为"已使用"的账号`;
+        
+        if (!confirm(message)) return;
+        
+        try {
+            const response = await fetch('/api/accounts/delete-used', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(`成功删除 ${result.count} 个已使用账号`);
+                loadAccounts();
+            } else {
+                alert('删除失败: ' + result.error);
+            }
+        } catch (error) {
+            console.error('删除已使用账号失败:', error);
+            alert('删除失败: ' + error.message);
+        }
+    }, [accounts, loadAccounts]);
+    
+    // 批量删除所有账号
+    const deleteAllAccounts = useCallback(async () => {
+        const count = accounts.length;
+        
+        if (count === 0) {
+            alert('没有账号需要删除');
+            return;
+        }
+        
+        const message = `⚠️ 危险操作！\n\n确定要删除所有账号吗？共 ${count} 个\n\n此操作不可恢复！`;
+        
+        if (!confirm(message)) return;
+        
+        // 二次确认
+        if (!confirm('再次确认：真的要删除所有账号吗？')) return;
+        
+        try {
+            const response = await fetch('/api/accounts/delete-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(`成功删除 ${result.count} 个账号`);
+                loadAccounts();
+            } else {
+                alert('删除失败: ' + result.error);
+            }
+        } catch (error) {
+            console.error('批量删除账号失败:', error);
+            alert('删除失败: ' + error.message);
+        }
+    }, [accounts, loadAccounts]);
+    
     // 批量删除失效的Outlook账号
     const deleteExpiredOutlookAccounts = useCallback(async () => {
         const expiredCount = outlookAccounts.filter(a => a.health === 'expired').length;
@@ -734,6 +824,69 @@ const App = () => {
             }
         } catch (error) {
             console.error('删除失效Outlook账号失败:', error);
+            alert('删除失败: ' + error.message);
+        }
+    }, [outlookAccounts, loadOutlookAccounts]);
+    
+    // 导出Outlook账号（email、password、sessionKey）
+    const exportOutlookAccounts = useCallback(async () => {
+        try {
+            const response = await fetch('/api/accounts/outlook/export');
+            const result = await response.json();
+            
+            if (result.success) {
+                // 生成JSON文件并下载
+                const dataStr = JSON.stringify(result.data, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `outlook_accounts_export_${new Date().getTime()}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert(`成功导出 ${result.count} 个账号`);
+            } else {
+                alert('导出失败: ' + result.error);
+            }
+        } catch (error) {
+            console.error('导出Outlook账号失败:', error);
+            alert('导出失败: ' + error.message);
+        }
+    }, []);
+    
+    // 批量删除所有Outlook账号
+    const deleteAllOutlookAccounts = useCallback(async () => {
+        const count = outlookAccounts.length;
+        
+        if (count === 0) {
+            alert('没有Outlook账号需要删除');
+            return;
+        }
+        
+        const message = `⚠️ 危险操作！\n\n确定要删除所有Outlook账号吗？共 ${count} 个\n\n此操作不可恢复！`;
+        
+        if (!confirm(message)) return;
+        
+        // 二次确认
+        if (!confirm('再次确认：真的要删除所有Outlook账号吗？')) return;
+        
+        try {
+            const response = await fetch('/api/accounts/outlook/delete-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert(`成功删除 ${result.count} 个Outlook账号`);
+                loadOutlookAccounts();
+            } else {
+                alert('删除失败: ' + result.error);
+            }
+        } catch (error) {
+            console.error('批量删除Outlook账号失败:', error);
             alert('删除失败: ' + error.message);
         }
     }, [outlookAccounts, loadOutlookAccounts]);
@@ -831,129 +984,54 @@ const App = () => {
                             transition: 'all 0.3s'
                         }}
                     >
-                        📧 Outlook注册
+                        📧 Outlook
                     </button>
                 </div>
                 
                 {/* 自动注册面板 */}
                 {activeTab === 'auto' && (
-                    <div className="controls-row">
-                        <div className="flex flex-center gap-10">
-                            <label className="text-gray">注册数量</label>
-                            <input
-                                type="number"
-                                className="input"
-                                value={registerCount}
-                                onChange={(e) => setRegisterCount(parseInt(e.target.value))}
-                                min="1"
-                                max="100"
-                                style={{ width: '80px' }}
-                            />
-                        </div>
-                        <div className="flex flex-center gap-10">
-                            <label className="text-gray">并发</label>
-                            <input
-                                type="number"
-                                className="input"
-                                value={concurrent}
-                                onChange={(e) => setConcurrent(parseInt(e.target.value))}
-                                min="1"
-                                max="20"
-                                style={{ width: '60px' }}
-                            />
-                        </div>
-                        <Button variant="primary" onClick={startRegister} disabled={taskStatus.running}>
-                            开始注册
-                        </Button>
-                        <Button variant="secondary" onClick={checkAccounts} disabled={taskStatus.running}>
-                            检查状态
-                        </Button>
-                        <Button variant="secondary" onClick={() => setEmailConfigVisible(true)}>
-                            📧 邮箱配置
-                        </Button>
-                        <Button variant="secondary" onClick={() => setProxyManagerVisible(true)} className="ml-auto">
-                            🔧 代理管理
-                        </Button>
-                    </div>
-                )}
-                
-                {/* Outlook注册面板 */}
-                {activeTab === 'outlook' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <div className="text-gray" style={{ fontSize: '0.9em' }}>
-                            <strong>格式说明:</strong> 每行一个账号，支持以下格式: 
-                            <div style={{ marginTop: '8px', marginLeft: '10px' }}>
-                                <code style={{ 
-                                    background: '#2d3748', 
-                                    padding: '2px 6px', 
-                                    borderRadius: '3px',
-                                    display: 'inline-block',
-                                    marginBottom: '5px'
-                                }}>
-                                    邮箱----密码----ClientID----RefreshToken
-                                </code>
-                                <span style={{ marginLeft: '10px', color: '#48bb78' }}>← 推荐(智能选择)</span>
-                                <br/>
-                                <code style={{ 
-                                    background: '#2d3748', 
-                                    padding: '2px 6px', 
-                                    borderRadius: '3px',
-                                    display: 'inline-block'
-                                }}>
-                                    邮箱----密码
-                                </code>
-                                <span style={{ marginLeft: '10px', color: '#a0aec0' }}>← 仅IMAP</span>
-                            </div>
-                            <div style={{ marginTop: '8px', fontSize: '0.9em', padding: '8px', background: '#2d3748', borderRadius: '5px' }}>
-                                💡 <strong>智能模式:</strong> 自动尝试 Graph API → IMAP,使用第一个成功的方式
-                            </div>
-                        </div>
-                        <div style={{ 
-                            padding: '10px', 
-                            background: '#2d3748', 
-                            borderRadius: '5px',
-                            fontSize: '0.85em',
-                            color: '#fbbf24'
-                        }}>
-                            ⚠️ <strong>注意:</strong> Outlook注册的账号会单独保存到 <code style={{ 
-                                background: '#1a202c', 
-                                padding: '2px 6px',
-                                borderRadius: '3px'
-                            }}>outlook_accounts.json</code> 文件
-                        </div>
-                        <textarea
-                            className="input"
-                            value={outlookConfig}
-                            onChange={(e) => setOutlookConfig(e.target.value)}
-                            placeholder="# 推荐: 完整格式(智能选择)&#10;test@hotmail.com----password123----client-id----refresh-token&#10;&#10;# 简化: 仅IMAP&#10;simple@outlook.com----mypassword"
-                            rows="8"
-                            style={{
-                                width: '100%',
-                                fontFamily: 'monospace',
-                                fontSize: '12px',
-                                resize: 'vertical'
-                            }}
-                        />
+                    <>
                         <div className="controls-row">
-                            <Button 
-                                variant="primary" 
-                                onClick={startOutlookRegister} 
-                                disabled={taskStatus.running || !outlookConfig.trim()}
-                            >
-                                开始Outlook注册
-                            </Button>
-                            <div className="text-gray" style={{ fontSize: '0.85em', marginLeft: '10px' }}>
-                                将注册 {outlookConfig.trim().split('\n').filter(l => l.trim() && !l.startsWith('#')).length} 个账号
+                            <div className="flex flex-center gap-10">
+                                <label className="text-gray">注册数量</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={registerCount}
+                                    onChange={(e) => setRegisterCount(parseInt(e.target.value))}
+                                    min="1"
+                                    max="100"
+                                    style={{ width: '80px' }}
+                                />
                             </div>
-                            <Button variant="secondary" onClick={checkAccounts} disabled={taskStatus.running} style={{ marginLeft: 'auto' }}>
+                            <div className="flex flex-center gap-10">
+                                <label className="text-gray">并发</label>
+                                <input
+                                    type="number"
+                                    className="input"
+                                    value={concurrent}
+                                    onChange={(e) => setConcurrent(parseInt(e.target.value))}
+                                    min="1"
+                                    max="20"
+                                    style={{ width: '60px' }}
+                                />
+                            </div>
+                            <Button variant="primary" onClick={startRegister} disabled={taskStatus.running}>
+                                开始注册
+                            </Button>
+                            <Button variant="secondary" onClick={checkAccounts} disabled={taskStatus.running}>
                                 检查状态
                             </Button>
-                            <Button variant="secondary" onClick={() => setProxyManagerVisible(true)}>
+                            <Button variant="secondary" onClick={() => setEmailConfigVisible(true)}>
+                                📧 邮箱配置
+                            </Button>
+                            <Button variant="secondary" onClick={() => setProxyManagerVisible(true)} className="ml-auto">
                                 🔧 代理管理
                             </Button>
                         </div>
-                    </div>
+                    </>
                 )}
+                
             </div>
             
             {/* 悬浮进度窗口 */}
@@ -965,87 +1043,140 @@ const App = () => {
                 onClose={() => setProgressVisible(false)}
             />
             
-            {/* 账号列表 */}
-            <div className="accounts-container">
-                <div className="accounts-header">
-                    <h2 className="text-green">账号列表</h2>
-                    <div className="filter-buttons">
-                        {['all', 'available', 'used'].map(f => (
-                            <button
-                                key={f}
-                                className={`filter-btn ${filter === f ? 'active' : ''}`}
-                                onClick={() => setFilter(f)}
+            {/* 账号列表页面 */}
+            {activeTab === 'auto' && (
+                <div className="accounts-container" style={{ marginTop: '30px' }}>
+                    <div className="accounts-header">
+                        <h2 className="text-green">📋 账号列表</h2>
+                        <div className="filter-buttons">
+                            {['all', 'available', 'used'].map(f => (
+                                <button
+                                    key={f}
+                                    className={`filter-btn ${filter === f ? 'active' : ''}`}
+                                    onClick={() => setFilter(f)}
+                                >
+                                    {f === 'all' ? '全部' : f === 'available' ? '未使用' : '已使用'}
+                                </button>
+                            ))}
+                            <Button 
+                                variant="danger" 
+                                onClick={deleteExpiredAccounts}
+                                style={{ marginLeft: '20px' }}
                             >
-                                {f === 'all' ? '全部' : f === 'available' ? '未使用' : '已使用'}
-                            </button>
-                        ))}
-                        <Button 
-                            variant="danger" 
-                            onClick={deleteExpiredAccounts}
-                            style={{ marginLeft: '20px' }}
-                        >
-                            🗑️ 删除失效
-                        </Button>
+                                🗑️ 删除失效
+                            </Button>
+                            <Button 
+                                variant="danger" 
+                                onClick={deleteUsedAccounts}
+                                style={{ marginLeft: '10px' }}
+                            >
+                                🗑️ 删除已使用
+                            </Button>
+                            <Button 
+                                variant="danger" 
+                                onClick={deleteAllAccounts}
+                                style={{ marginLeft: '10px', backgroundColor: '#dc143c' }}
+                            >
+                                ⚠️ 批量删除
+                            </Button>
+                        </div>
                     </div>
+                    <AccountsTable
+                        accounts={accounts}
+                        filter={filter}
+                        onCheckAccount={checkAccount}
+                        onMarkAccount={markAccount}
+                        onDeleteAccount={deleteAccount}
+                        onShowDetails={showDetails}
+                    />
                 </div>
-                <AccountsTable
-                    accounts={accounts}
-                    filter={filter}
-                    onCheckAccount={checkAccount}
-                    onMarkAccount={markAccount}
-                    onDeleteAccount={deleteAccount}
-                    onShowDetails={showDetails}
-                />
-            </div>
+            )}
             
-            {/* Outlook账号列表 */}
-            <div className="accounts-container" style={{ marginTop: '30px' }}>
-                <div className="accounts-header">
-                    <h2 className="text-green">📧 Outlook 账号列表</h2>
-                    <div className="filter-buttons">
-                        {['all', 'available', 'used'].map(f => (
-                            <button
-                                key={f}
-                                className={`filter-btn ${outlookAccountsFilter === f ? 'active' : ''}`}
-                                onClick={() => setOutlookAccountsFilter(f)}
-                            >
-                                {f === 'all' ? '全部' : f === 'available' ? '未使用' : '已使用'}
-                            </button>
-                        ))}
-                        <Button 
-                            variant="secondary" 
-                            onClick={loadOutlookAccounts}
-                            style={{ marginLeft: '20px' }}
-                        >
-                            🔄 刷新
-                        </Button>
-                        <Button 
-                            variant="secondary" 
-                            onClick={checkOutlookAccounts}
-                            disabled={taskStatus.running}
-                            style={{ marginLeft: '10px' }}
-                        >
-                            🔍 批量检查
-                        </Button>
-                        <Button 
-                            variant="danger" 
-                            onClick={deleteExpiredOutlookAccounts}
-                            style={{ marginLeft: '10px' }}
-                        >
-                            🗑️ 删除失效
-                        </Button>
+            {/* Outlook页面(注册+账号列表) */}
+            {activeTab === 'outlook' && (
+                <div>
+                    {/* Outlook注册面板 */}
+                    <div className="controls" style={{ marginBottom: '30px' }}>
+                        <h2 className="text-green" style={{ marginBottom: '15px' }}>📧 Outlook 注册</h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <textarea
+                                className="input"
+                                value={outlookConfig}
+                                onChange={(e) => setOutlookConfig(e.target.value)}
+                                placeholder="# 推荐: 完整格式(智能选择)&#10;test@hotmail.com----password123----client-id----refresh-token&#10;&#10;# 简化: 仅IMAP&#10;simple@outlook.com----mypassword"
+                                rows="8"
+                                style={{
+                                    width: '100%',
+                                    fontFamily: 'monospace',
+                                    fontSize: '12px',
+                                    resize: 'vertical'
+                                }}
+                            />
+                            <div className="controls-row">
+                                <Button 
+                                    variant="primary" 
+                                    onClick={startOutlookRegister} 
+                                    disabled={taskStatus.running || !outlookConfig.trim()}
+                                >
+                                    开始Outlook注册
+                                </Button>
+                                <div className="text-gray" style={{ fontSize: '0.85em', marginLeft: '10px' }}>
+                                    将注册 {outlookConfig.trim().split('\n').filter(l => l.trim() && !l.startsWith('#')).length} 个账号
+                                </div>
+                                <Button variant="secondary" onClick={() => setProxyManagerVisible(true)} style={{ marginLeft: 'auto' }}>
+                                    🔧 代理管理
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* Outlook账号列表 */}
+                    <div className="accounts-container">
+                        <div className="accounts-header">
+                            <h2 className="text-green">📧 Outlook 账号列表</h2>
+                            <div className="filter-buttons">
+                                <Button 
+                                    variant="secondary" 
+                                    onClick={checkOutlookAccounts}
+                                    disabled={taskStatus.running}
+                                >
+                                    🔍 批量检查
+                                </Button>
+                                <Button 
+                                    variant="danger" 
+                                    onClick={deleteExpiredOutlookAccounts}
+                                    style={{ marginLeft: '10px' }}
+                                >
+                                    🗑️ 删除失效
+                                </Button>
+                                <Button 
+                                    variant="primary" 
+                                    onClick={exportOutlookAccounts}
+                                    style={{ marginLeft: '10px' }}
+                                >
+                                    📥 导出账号
+                                </Button>
+                                <Button 
+                                    variant="danger" 
+                                    onClick={deleteAllOutlookAccounts}
+                                    style={{ marginLeft: '10px', backgroundColor: '#dc143c' }}
+                                >
+                                    ⚠️ 批量删除
+                                </Button>
+                            </div>
+                        </div>
+                        <AccountsTable
+                            accounts={outlookAccounts}
+                            filter="all"
+                            onCheckAccount={checkOutlookAccount}
+                            onMarkAccount={markOutlookAccount}
+                            onDeleteAccount={deleteOutlookAccount}
+                            onShowDetails={showDetails}
+                            accountType="outlook"
+                        />
                     </div>
                 </div>
-                <AccountsTable
-                    accounts={outlookAccounts}
-                    filter={outlookAccountsFilter}
-                    onCheckAccount={checkOutlookAccount}
-                    onMarkAccount={markOutlookAccount}
-                    onDeleteAccount={deleteOutlookAccount}
-                    onShowDetails={showDetails}
-                    accountType="outlook"
-                />
-            </div>
+            )}
             
             {/* 模态框 */}
             <Modal

@@ -308,6 +308,56 @@ def delete_expired_accounts():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@app.route('/api/accounts/delete-used', methods=['POST'])
+def delete_used_accounts():
+    """删除已使用账号"""
+    try:
+        accounts = load_accounts()
+        original_count = len(accounts)
+        
+        # 统计used=true的账号数量
+        used_count = len([acc for acc in accounts if acc.get('used', False)])
+        print(f"[DEBUG] 总账号数: {original_count}, 已使用账号数: {used_count}")
+        
+        # 只保留未使用的账号（used != true）
+        accounts = [acc for acc in accounts if not acc.get('used', False)]
+        
+        deleted_count = original_count - len(accounts)
+        save_accounts(accounts)
+        
+        print(f"[DEBUG] 删除后剩余: {len(accounts)}, 实际删除: {deleted_count}")
+        
+        return jsonify({
+            "success": True,
+            "count": deleted_count,
+            "message": f"已删除 {deleted_count} 个已使用账号"
+        })
+    except Exception as e:
+        print(f"[ERROR] 删除已使用账号失败: {str(e)}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/accounts/delete-all', methods=['POST'])
+def delete_all_accounts():
+    """批量删除所有账号"""
+    try:
+        accounts = load_accounts()
+        count = len(accounts)
+        
+        # 清空账号列表
+        save_accounts([])
+        
+        log_message(f"批量删除所有账号: 删除{count}个")
+        
+        return jsonify({
+            "success": True,
+            "count": count,
+            "message": f"已删除 {count} 个账号"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @app.route('/api/accounts/outlook/delete-expired', methods=['POST'])
 def delete_expired_outlook_accounts():
     """批量删除失效的Outlook账号"""
@@ -329,6 +379,55 @@ def delete_expired_outlook_accounts():
             "success": True,
             "count": deleted_count,
             "message": f"已删除 {deleted_count} 个失效的Outlook账号"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/accounts/outlook/delete-all', methods=['POST'])
+def delete_all_outlook_accounts():
+    """批量删除所有Outlook账号"""
+    try:
+        from account.storage import load_outlook_accounts, save_outlook_accounts
+        
+        accounts = load_outlook_accounts(OUTLOOK_ACCOUNTS_FILE)
+        count = len(accounts)
+        
+        # 清空账号列表
+        save_outlook_accounts([], OUTLOOK_ACCOUNTS_FILE)
+        
+        log_message(f"批量删除所有Outlook账号: 删除{count}个")
+        
+        return jsonify({
+            "success": True,
+            "count": count,
+            "message": f"已删除 {count} 个Outlook账号"
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/api/accounts/outlook/export', methods=['GET'])
+def export_outlook_accounts():
+    """导出Outlook账号的email、password、sessionKey"""
+    try:
+        from account.storage import load_outlook_accounts
+        
+        accounts = load_outlook_accounts(OUTLOOK_ACCOUNTS_FILE)
+        
+        # 提取需要的字段
+        exported_data = []
+        for account in accounts:
+            exported_data.append({
+                'email': account.get('email', ''),
+                'password': account.get('password', ''),
+                'sessionKey': account.get('cookies', {}).get('sessionKey', '')
+            })
+        
+        return jsonify({
+            "success": True,
+            "data": exported_data,
+            "count": len(exported_data)
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
