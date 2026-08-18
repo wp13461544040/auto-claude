@@ -236,7 +236,9 @@ const EmailConfig = ({ visible, onClose, config, onRefresh }) => {
     const [remailSuffix, setRemailSuffix] = useState('');
     const [remailProjects, setRemailProjects] = useState([]);
     const [remailProducts, setRemailProducts] = useState([]);
+    const [remailSuffixes, setRemailSuffixes] = useState([]);
     const [loadingProjects, setLoadingProjects] = useState(false);
+    const [loadingSuffixes, setLoadingSuffixes] = useState(false);
     const [testResult, setTestResult] = useState('');
     
     // 加载配置(使用完整的API Key,不再截断)
@@ -291,6 +293,36 @@ const EmailConfig = ({ visible, onClose, config, onRefresh }) => {
         }
     }, [remailApiKey, remailApiUrl]);
     
+    // 加载产品后缀
+    const loadProductSuffixes = useCallback(async (productId) => {
+        if (!remailApiKey || !productId || !remailProjectId) return;
+        
+        setLoadingSuffixes(true);
+        try {
+            const response = await fetch('/api/remail/suffixes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    api_key: remailApiKey,
+                    api_url: remailApiUrl,
+                    project_id: parseInt(remailProjectId),
+                    product_id: parseInt(productId)
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                setRemailSuffixes(result.data.suffixes || []);
+            } else {
+                setRemailSuffixes([]);
+            }
+        } catch (error) {
+            console.error('加载后缀失败:', error);
+            setRemailSuffixes([]);
+        } finally {
+            setLoadingSuffixes(false);
+        }
+    }, [remailApiKey, remailApiUrl, remailProjectId]);
+    
     // 当选择项目时,加载产品列表
     const handleProjectChange = useCallback((projectId) => {
         setRemailProjectId(projectId);
@@ -301,7 +333,27 @@ const EmailConfig = ({ visible, onClose, config, onRefresh }) => {
             setRemailProducts([]);
         }
         setRemailProductId('');
+        setRemailSuffixes([]);
+        setRemailSuffix('');
     }, [remailProjects]);
+    
+    // 当选择产品时,加载后缀列表
+    const handleProductChange = useCallback((productIndex) => {
+        setRemailProductId(productIndex);
+        setRemailSuffix('');
+        if (productIndex !== '') {
+            // 根据索引获取产品
+            const product = remailProducts[parseInt(productIndex)];
+            if (product && product.suffixes) {
+                const suffixList = product.suffixes.map(s => s.suffix);
+                setRemailSuffixes(suffixList);
+            } else {
+                setRemailSuffixes([]);
+            }
+        } else {
+            setRemailSuffixes([]);
+        }
+    }, [remailProducts]);
     
     // 测试Remail连接
     const testRemail = useCallback(async () => {
@@ -492,15 +544,20 @@ const EmailConfig = ({ visible, onClose, config, onRefresh }) => {
                             </label>
                             <select
                                 value={remailProductId}
-                                onChange={(e) => setRemailProductId(e.target.value)}
+                                onChange={(e) => handleProductChange(e.target.value)}
                                 className="input"
+                                disabled={!remailProjectId}
                             >
                                 <option value="">-- 请先选择项目 --</option>
-                                {remailProducts.map(p => (
-                                    <option key={p.id} value={p.id}>
-                                        {p.name} (ID: {p.id})
-                                    </option>
-                                ))}
+                                {remailProducts.map((p, idx) => {
+                                    const available = p.totalAvailable || 0;
+                                    const suffixCount = (p.suffixes || []).length;
+                                    return (
+                                        <option key={idx} value={idx}>
+                                            {p.type.toUpperCase()} - 可用:{available} - 后缀:{suffixCount}
+                                        </option>
+                                    );
+                                })}
                             </select>
                         </div>
                     </div>
@@ -517,14 +574,33 @@ const EmailConfig = ({ visible, onClose, config, onRefresh }) => {
                             </select>
                         </div>
                         <div className="form-group flex-1">
-                            <label className="form-label-sm">邮箱后缀(可选)</label>
-                            <input
-                                type="text"
-                                value={remailSuffix}
-                                onChange={(e) => setRemailSuffix(e.target.value)}
-                                placeholder="com.cn"
-                                className="input"
-                            />
+                            <label className="form-label-sm">
+                                邮箱后缀 {loadingSuffixes && <span className="text-gray">(加载中...)</span>}
+                            </label>
+                            {remailSuffixes.length > 0 ? (
+                                <select
+                                    value={remailSuffix}
+                                    onChange={(e) => setRemailSuffix(e.target.value)}
+                                    className="input"
+                                    disabled={loadingSuffixes}
+                                >
+                                    <option value="">-- 随机后缀 --</option>
+                                    {remailSuffixes.map((suffix, idx) => (
+                                        <option key={idx} value={suffix}>
+                                            {suffix}
+                                        </option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={remailSuffix}
+                                    onChange={(e) => setRemailSuffix(e.target.value)}
+                                    placeholder="留空或输入如 com.cn"
+                                    className="input"
+                                    disabled={loadingSuffixes}
+                                />
+                            )}
                         </div>
                     </div>
                     <div className="test-section">

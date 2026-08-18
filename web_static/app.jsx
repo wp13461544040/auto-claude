@@ -223,11 +223,15 @@ const AccountsTable = ({ accounts, filter, onCheckAccount, onMarkAccount, onDele
                             <th className="table-header" style={{ width: '140px' }}>账号密码</th>
                         )}
                         <th className="table-header" style={{ width: '90px' }}>IP类型</th>
-                        <th className="table-header" style={{ width: '130px' }}>注册时间</th>
+                        {accountType === 'outlook' && (
+                            <>
+                                <th className="table-header" style={{ width: '70px' }}>健康</th>
+                                <th className="table-header" style={{ width: '70px' }}>状态</th>
+                            </>
+                        )}
                         {accountType !== 'outlook' && (
                             <>
-                                <th className="table-header" style={{ width: '130px' }}>检查时间</th>
-                                <th className="table-header" style={{ width: '200px' }}>SessionKey</th>
+                                <th className="table-header" style={{ width: '280px' }}>SessionKey</th>
                                 <th className="table-header" style={{ width: '70px' }}>健康</th>
                                 <th className="table-header" style={{ width: '70px' }}>状态</th>
                             </>
@@ -255,7 +259,19 @@ const AccountsTable = ({ accounts, filter, onCheckAccount, onMarkAccount, onDele
                         return (
                             <tr key={idx} className={account.used ? 'row-used' : ''}>
                                 <td className="table-cell">{startIndex + idx + 1}</td>
-                                <td className="table-cell">{maskEmail(account.email)}</td>
+                                <td className="table-cell">
+                                    <span
+                                        style={{ cursor: 'pointer', textDecoration: 'underline' }}
+                                        onClick={() => onShowDetails('账号详情', {
+                                            邮箱: account.email || 'N/A',
+                                            注册时间: formatDateTime(account.saved_at),
+                                            检查时间: formatDateTime(account.checked_at),
+                                        })}
+                                        title="点击查看注册/检查时间"
+                                    >
+                                        {maskEmail(account.email)}
+                                    </span>
+                                </td>
                                 {accountType === 'outlook' && (
                                     <td className="table-cell">
                                         <div className="session-key-row">
@@ -307,14 +323,34 @@ const AccountsTable = ({ accounts, filter, onCheckAccount, onMarkAccount, onDele
                                 >
                                     {ipType}
                                 </td>
-                                <td className="table-cell text-sm text-gray">
-                                    {formatDateTime(account.saved_at)}
-                                </td>
+                                {accountType === 'outlook' && (
+                                    <>
+                                        <td className="table-cell" style={{ color: healthColor }}>
+                                            {healthIcon} {healthText}
+                                        </td>
+                                        <td className="table-cell">
+                                            {account.used ? (
+                                                <span 
+                                                    className="badge badge-used clickable" 
+                                                    onClick={() => onMarkAccount(accountIndex, false)}
+                                                    title="点击切换为未使用"
+                                                >
+                                                    已使用
+                                                </span>
+                                            ) : (
+                                                <span 
+                                                    className="badge badge-available clickable"
+                                                    onClick={() => onMarkAccount(accountIndex, true)}
+                                                    title="点击切换为已使用"
+                                                >
+                                                    未使用
+                                                </span>
+                                            )}
+                                        </td>
+                                    </>
+                                )}
                                 {accountType !== 'outlook' && (
                                     <>
-                                        <td className="table-cell text-sm text-gray">
-                                            {formatDateTime(account.checked_at)}
-                                        </td>
                                         <td className="table-cell">
                                             <div className="session-key-row">
                                                 <span
@@ -322,7 +358,7 @@ const AccountsTable = ({ accounts, filter, onCheckAccount, onMarkAccount, onDele
                                                     onClick={() => onShowDetails('SessionKey', sessionKey)}
                                                     title="点击查看完整SessionKey"
                                                 >
-                                                    {sessionKey.slice(0, 12)}...
+                                                    {sessionKey.slice(0, 24)}...
                                                 </span>
                                                 <button
                                                     className="copy-btn"
@@ -359,16 +395,14 @@ const AccountsTable = ({ accounts, filter, onCheckAccount, onMarkAccount, onDele
                                 )}
                                 <td className="table-cell">
                                     <div className="action-buttons">
-                                        {accountType !== 'outlook' && (
-                                            <Button
-                                                variant="secondary"
-                                                style={{ padding: '6px 12px', fontSize: '0.85em' }}
-                                                onClick={() => handleCheckAccount(accountIndex)}
-                                                disabled={isChecking}
-                                            >
-                                                {isChecking ? '检查中...' : '检查'}
-                                            </Button>
-                                        )}
+                                        <Button
+                                            variant="secondary"
+                                            style={{ padding: '6px 12px', fontSize: '0.85em' }}
+                                            onClick={() => handleCheckAccount(accountIndex)}
+                                            disabled={isChecking}
+                                        >
+                                            {isChecking ? '检查中...' : '检查'}
+                                        </Button>
                                         <Button
                                             variant="danger"
                                             style={{ padding: '6px 12px', fontSize: '0.85em' }}
@@ -469,6 +503,9 @@ const App = () => {
     const [outlookAccountsFilter, setOutlookAccountsFilter] = useState('all');
     const [outlookAccountsView, setOutlookAccountsView] = useState('list'); // list或accounts
     
+    // 新增: Outlook取件模式选择
+    const [outlookMailMode, setOutlookMailMode] = useState('auto'); // auto/imap/graph
+    
     // 加载配置
     const loadConfig = useCallback(async () => {
         try {
@@ -545,12 +582,28 @@ const App = () => {
             return;
         }
         
+        // 如果用户选择了非auto模式，自动在每行末尾添加模式标识
+        const processedLines = lines.map(line => {
+            // 检查是否已经有模式标识（最多5个部分）
+            const parts = line.split('----');
+            if (parts.length >= 5) {
+                // 已经有模式标识，保持不变
+                return line;
+            } else if (outlookMailMode !== 'auto') {
+                // 没有模式标识且用户选择了非auto，添加模式
+                return `${line}----${outlookMailMode}`;
+            } else {
+                // auto模式，保持原样
+                return line;
+            }
+        });
+        
         try {
             const response = await fetch('/api/register/outlook', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    outlook_lines: lines,
+                    outlook_lines: processedLines,
                     concurrent: 1  // Outlook建议单线程
                 })
             });
@@ -564,7 +617,7 @@ const App = () => {
             console.error('开始Outlook注册失败:', error);
             alert('请求失败: ' + error.message);
         }
-    }, [outlookConfig]);
+    }, [outlookConfig, outlookMailMode]);
     
     // 轮询任务状态
     const pollTaskStatus = useCallback(() => {
@@ -1099,11 +1152,81 @@ const App = () => {
                     <div className="controls" style={{ marginBottom: '30px' }}>
                         <h2 className="text-green" style={{ marginBottom: '15px' }}>📧 Outlook 注册</h2>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            {/* 取件模式选择器 */}
+                            <div style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '15px',
+                                padding: '10px',
+                                background: '#1a202c',
+                                borderRadius: '6px',
+                                border: '1px solid #2d3748'
+                            }}>
+                                <label className="text-gray" style={{ fontWeight: 'bold', minWidth: '80px' }}>
+                                    取件模式:
+                                </label>
+                                <div style={{ display: 'flex', gap: '10px', flex: 1 }}>
+                                    <button
+                                        onClick={() => setOutlookMailMode('auto')}
+                                        style={{
+                                            padding: '8px 16px',
+                                            border: outlookMailMode === 'auto' ? '2px solid #38a169' : '1px solid #4a5568',
+                                            background: outlookMailMode === 'auto' ? '#2f855a' : '#2d3748',
+                                            color: outlookMailMode === 'auto' ? '#fff' : '#a0aec0',
+                                            cursor: 'pointer',
+                                            borderRadius: '4px',
+                                            fontSize: '13px',
+                                            fontWeight: outlookMailMode === 'auto' ? 'bold' : 'normal',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        🤖 自动 (推荐)
+                                    </button>
+                                    <button
+                                        onClick={() => setOutlookMailMode('imap')}
+                                        style={{
+                                            padding: '8px 16px',
+                                            border: outlookMailMode === 'imap' ? '2px solid #3182ce' : '1px solid #4a5568',
+                                            background: outlookMailMode === 'imap' ? '#2c5282' : '#2d3748',
+                                            color: outlookMailMode === 'imap' ? '#fff' : '#a0aec0',
+                                            cursor: 'pointer',
+                                            borderRadius: '4px',
+                                            fontSize: '13px',
+                                            fontWeight: outlookMailMode === 'imap' ? 'bold' : 'normal',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        📨 IMAP
+                                    </button>
+                                    <button
+                                        onClick={() => setOutlookMailMode('graph')}
+                                        style={{
+                                            padding: '8px 16px',
+                                            border: outlookMailMode === 'graph' ? '2px solid #805ad5' : '1px solid #4a5568',
+                                            background: outlookMailMode === 'graph' ? '#553c9a' : '#2d3748',
+                                            color: outlookMailMode === 'graph' ? '#fff' : '#a0aec0',
+                                            cursor: 'pointer',
+                                            borderRadius: '4px',
+                                            fontSize: '13px',
+                                            fontWeight: outlookMailMode === 'graph' ? 'bold' : 'normal',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        🌐 Graph API
+                                    </button>
+                                </div>
+                                <div className="text-gray" style={{ fontSize: '12px', minWidth: '200px' }}>
+                                    {outlookMailMode === 'auto' && '优先Graph，失败降级IMAP'}
+                                    {outlookMailMode === 'imap' && '使用IMAP协议(需要密码)'}
+                                    {outlookMailMode === 'graph' && '使用Graph API(需要Token)'}
+                                </div>
+                            </div>
+                            
                             <textarea
                                 className="input"
                                 value={outlookConfig}
                                 onChange={(e) => setOutlookConfig(e.target.value)}
-                                placeholder="# 推荐: 完整格式(智能选择)&#10;test@hotmail.com----password123----client-id----refresh-token&#10;&#10;# 简化: 仅IMAP&#10;simple@outlook.com----mypassword"
+                                placeholder="# 推荐: 完整格式(支持自动模式)&#10;test@hotmail.com----password123----client-id----refresh-token&#10;&#10;# 简化: 仅IMAP&#10;simple@outlook.com----mypassword&#10;&#10;# 提示: 上方选择的取件模式会自动应用到所有账号"
                                 rows="8"
                                 style={{
                                     width: '100%',
@@ -1118,7 +1241,7 @@ const App = () => {
                                     onClick={startOutlookRegister} 
                                     disabled={taskStatus.running || !outlookConfig.trim()}
                                 >
-                                    开始Outlook注册
+                                    开始Outlook注册 ({outlookMailMode.toUpperCase()})
                                 </Button>
                                 <div className="text-gray" style={{ fontSize: '0.85em', marginLeft: '10px' }}>
                                     将注册 {outlookConfig.trim().split('\n').filter(l => l.trim() && !l.startsWith('#')).length} 个账号

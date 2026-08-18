@@ -753,13 +753,17 @@ def get_config():
         REMAIL_API_KEY, REMAIL_API_URL, REMAIL_PROJECT_ID,
         REMAIL_PRODUCT_ID, REMAIL_MODE, REMAIL_SUFFIX
     )
+    # 动态获取最新代理列表
+    from core import config as config_module
+    config_module.reload_proxies()
+    
     return jsonify({
         "success": True,
         "data": {
             "accounts_file": ACCOUNTS_FILE,
             "default_count": REGISTER_COUNT,
             "default_concurrent": REGISTER_CONCURRENT,
-            "proxy_count": len(PROXY_LIST),
+            "proxy_count": len(config_module.PROXY_LIST),  # 使用动态加载的值
             "email_service": EMAIL_SERVICE,
             "moemail": {
                 "api_key": MOEMAIL_API_KEY,  # 返回完整API Key
@@ -773,7 +777,7 @@ def get_config():
                 "product_id": REMAIL_PRODUCT_ID,
                 "mode": REMAIL_MODE,
                 "suffix": REMAIL_SUFFIX,
-                "configured": bool(REMAIL_API_KEY and REMAIL_PROJECT_ID and REMAIL_PRODUCT_ID)
+                "configured": bool(REMAIL_API_KEY and REMAIL_PROJECT_ID is not None and REMAIL_PRODUCT_ID is not None)
             }
         }
     })
@@ -844,8 +848,12 @@ def test_exit_ip():
 def get_proxies():
     """获取代理列表"""
     try:
-        from core.config import PROXY_LIST
+        from core.config import reload_proxies
+        from core import config as config_module
         import os
+        
+        # 重新加载代理配置，确保返回最新数据
+        reload_proxies()
         
         proxy_file = os.path.join(os.path.dirname(__file__), "proxy.text")
         proxies_data = []
@@ -878,7 +886,7 @@ def get_proxies():
             "success": True,
             "data": proxies_data,
             "total": len(proxies_data),
-            "enabled_count": len(PROXY_LIST)
+            "enabled_count": len(config_module.PROXY_LIST)  # 使用动态加载的值
         })
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -889,6 +897,7 @@ def upload_proxies():
     """上传代理列表（覆盖proxy.text文件）"""
     try:
         import os
+        from core.config import reload_proxies
         
         data = request.json or {}
         proxies = data.get('proxies', [])
@@ -924,6 +933,9 @@ def upload_proxies():
             for proxy in normalized_proxies:
                 f.write(proxy + '\n')
         
+        # 重新加载代理配置
+        reload_proxies()
+        
         return jsonify({
             "success": True,
             "message": f"已上传 {len(normalized_proxies)} 个代理",
@@ -938,6 +950,7 @@ def toggle_proxy():
     """切换代理启用状态（通过注释/取消注释）"""
     try:
         import os
+        from core.config import reload_proxies
         
         data = request.json or {}
         proxy_line = data.get('proxy', '')
@@ -979,6 +992,9 @@ def toggle_proxy():
         with open(proxy_file, 'w', encoding='utf-8') as f:
             f.writelines(lines)
         
+        # 重新加载代理配置
+        reload_proxies()
+        
         return jsonify({
             "success": True,
             "message": f"代理已{'启用' if enable else '禁用'}"
@@ -992,6 +1008,7 @@ def delete_proxy():
     """删除代理"""
     try:
         import os
+        from core.config import reload_proxies
         
         data = request.json or {}
         proxy_line = data.get('proxy', '')
@@ -1025,6 +1042,9 @@ def delete_proxy():
         # 写回文件
         with open(proxy_file, 'w', encoding='utf-8') as f:
             f.writelines(new_lines)
+        
+        # 重新加载代理配置
+        reload_proxies()
         
         return jsonify({
             "success": True,
@@ -1228,6 +1248,79 @@ def get_remail_projects():
             "success": False,
             "error": error_msg
         }), 500
+    except Exception as e:
+        import traceback
+        error_msg = f"异常: {str(e)[:200]}"
+        print(f"[ERROR] {error_msg}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": error_msg
+        }), 500
+
+
+@app.route('/api/remail/suffixes', methods=['POST'])
+def get_remail_suffixes():
+    """从项目数据中提取产品可用后缀列表"""
+    try:
+        data = request.json or {}
+        api_key = data.get('api_key', '')
+        api_url = data.get('api_url', 'https://remail.aishop6.com')
+        project_id = data.get('project_id')
+        product_id = data.get('product_id')
+        
+        if not api_key:
+            return jsonify({
+                "success": False,
+                "error": "缺少API Key"
+            }), 400
+        
+        if not project_id or not product_id:
+            return jsonify({
+                "success": False,
+                "error": "缺少项目ID或产品ID"
+            }), 400
+        
+        # 创建临时客户端获取项目信息
+        import requests
+        s = requests.Session()
+        s.trust_env = False
+        s.headers.update({
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        })
+        
+        # 获取项目列表
+        url = f"{api_url.rstrip('/')}/v1/open/projects"
+        params = {"offset": 0, "limit": 100}
+        
+        r = s.get(url, params=params, timeout=15)
+        r.raise_for_status()
+        result = r.json()
+        
+        # 查找指定项目和产品
+        projects = result.get("items", [])
+        suffixes = []
+        
+        for proj in projects:
+            if proj.get("id") == int(project_id):
+                products = proj.get("products", [])
+                for prod in products:
+                    # 注意: products是列表,需要根据索引或type匹配
+                    # 这里简化处理,取第一个有suffixes的产品
+                    if "suffixes" in prod:
+                        # 提取suffix字段
+                        suffixes = [s.get("suffix") for s in prod.get("suffixes", [])]
+                        break
+                break
+        
+        return jsonify({
+            "success": True,
+            "data": {
+                "suffixes": suffixes
+            }
+        })
     except Exception as e:
         import traceback
         error_msg = f"异常: {str(e)[:200]}"

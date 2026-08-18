@@ -92,6 +92,16 @@ def _load_proxies():
 
 PROXY_LIST = _load_proxies()
 
+def reload_proxies():
+    """重新加载代理配置（用于动态更新）"""
+    global PROXY_LIST, PROXY, PROXIES, _proxy_index
+    
+    with _proxy_lock:
+        PROXY_LIST = _load_proxies()
+        PROXY = PROXY_LIST[0] if PROXY_LIST else ""
+        PROXIES = {"http": PROXY, "https": PROXY} if PROXY else None
+        _proxy_index = 0  # 重置索引
+
 # 代理轮询索引（全局变量，线程安全）
 import threading
 _proxy_lock = threading.Lock()

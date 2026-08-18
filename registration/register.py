@@ -278,7 +278,8 @@ def register_account(accounts_file=ACCOUNTS_FILE):
         REMAIL_PROJECT_ID = get_remail_project_id()
         REMAIL_PRODUCT_ID = get_remail_product_id()
         
-        if not REMAIL_API_KEY or not REMAIL_PROJECT_ID or not REMAIL_PRODUCT_ID:
+        # 允许 product_id 为 0 (有效的产品索引)
+        if not REMAIL_API_KEY or REMAIL_PROJECT_ID is None or REMAIL_PRODUCT_ID is None:
             raise ValueError(
                 "Remail 配置不完整! 请在 .env 中设置:\n"
                 "REMAIL_API_KEY, REMAIL_PROJECT_ID, REMAIL_PRODUCT_ID"
@@ -462,9 +463,10 @@ def register_with_outlook(outlook_line, accounts_file=None):
     password = outlook_cfg["password"]
     client_id = outlook_cfg["client_id"]
     refresh_token = outlook_cfg["refresh_token"]
+    preferred_mode = outlook_cfg.get("mode", "auto")  # 用户指定的模式
     
     print_log(f"        邮箱: {email}")
-    print_log(f"        智能模式: 自动选择最佳连接方式")
+    print_log(f"        模式: {preferred_mode.upper()}")
     
     # ── 获取轮询代理 ──────────────────────────────────────────────────────
     current_proxies = get_proxies_dict()
@@ -484,35 +486,68 @@ def register_with_outlook(outlook_line, accounts_file=None):
         print_log("        出口 IP: 查询失败")
         ip_info = None
     
-    # ── 步骤 2/7：初始化邮箱客户端(智能重试) ──────────────────────────
-    print_log(f"  [2/7] 初始化Outlook客户端(智能模式)…")
+    # ── 步骤 2/7：初始化邮箱客户端 ──────────────────────────────────────
+    print_log(f"  [2/7] 初始化Outlook客户端({preferred_mode.upper()}模式)…")
     
     mail = None
     connection_error = None
     
-    # 策略1: 如果有ClientID和RefreshToken,优先尝试Graph API
-    if client_id and refresh_token:
-        print_log(f"        尝试Graph API模式...")
-        try:
-            mail = OutlookGraphClient(email, client_id, refresh_token)
-            mail.connect()
-            print_log(f"        ✓ Graph API连接成功")
-            mode = "graph"
-        except Exception as e:
-            print_log(f"        ✗ Graph API失败: {e}")
-            connection_error = e
-    
-    # 策略2: Graph失败或没有token,尝试IMAP
-    if mail is None and password:
-        print_log(f"        尝试IMAP模式...")
+    # 根据用户指定的模式选择连接方式
+    if preferred_mode == "imap":
+        # 强制IMAP模式
+        if not password:
+            raise ValueError("IMAP模式需要密码")
+        print_log(f"        强制使用IMAP模式...")
         try:
             mail = OutlookClient(email, password)
             mail.connect()
             print_log(f"        ✓ IMAP连接成功")
             mode = "imap"
         except Exception as e:
-            print_log(f"        ✗ IMAP失败: {e}")
-            connection_error = e
+            print_log(f"        ✗ IMAP连接失败: {e}")
+            raise
+    
+    elif preferred_mode == "graph":
+        # 强制Graph模式
+        if not (client_id and refresh_token):
+            raise ValueError("Graph模式需要ClientID和RefreshToken")
+        print_log(f"        强制使用Graph API模式...")
+        try:
+            mail = OutlookGraphClient(email, client_id, refresh_token)
+            mail.connect()
+            print_log(f"        ✓ Graph API连接成功")
+            mode = "graph"
+        except Exception as e:
+            print_log(f"        ✗ Graph API连接失败: {e}")
+            raise
+    
+    else:  # auto模式
+        # 智能选择：优先Graph,失败降级IMAP
+        print_log(f"        智能模式: 自动选择最佳连接方式")
+        
+        # 策略1: 如果有ClientID和RefreshToken,优先尝试Graph API
+        if client_id and refresh_token:
+            print_log(f"        尝试Graph API模式...")
+            try:
+                mail = OutlookGraphClient(email, client_id, refresh_token)
+                mail.connect()
+                print_log(f"        ✓ Graph API连接成功")
+                mode = "graph"
+            except Exception as e:
+                print_log(f"        ✗ Graph API失败: {e}")
+                connection_error = e
+        
+        # 策略2: Graph失败或没有token,尝试IMAP
+        if mail is None and password:
+            print_log(f"        尝试IMAP模式...")
+            try:
+                mail = OutlookClient(email, password)
+                mail.connect()
+                print_log(f"        ✓ IMAP连接成功")
+                mode = "imap"
+            except Exception as e:
+                print_log(f"        ✗ IMAP失败: {e}")
+                connection_error = e
     
     # 如果两种方式都失败了
     if mail is None:

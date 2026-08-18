@@ -24,8 +24,9 @@ def test_remail_config():
         return False
     print(f"  ✓ Project ID: {REMAIL_PROJECT_ID}")
     
-    if not REMAIL_PRODUCT_ID or REMAIL_PRODUCT_ID == 0:
-        print("  ❌ REMAIL_PRODUCT_ID 未配置或无效")
+    # Product ID 可以是 0 (有效的产品索引)
+    if REMAIL_PRODUCT_ID is None:
+        print("  ❌ REMAIL_PRODUCT_ID 未配置")
         return False
     print(f"  ✓ Product ID: {REMAIL_PRODUCT_ID}")
     

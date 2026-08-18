@@ -59,13 +59,14 @@ class OutlookGraphClient:
         """断开连接(无操作)"""
         pass
     
-    def list_messages(self, folder="Inbox", limit=10):
+    def list_messages(self, folder="Inbox", limit=10, minutes=2):
         """
-        获取邮件列表
+        获取邮件列表（仅获取最近N分钟内的邮件）
         
         Args:
             folder: 文件夹名(默认Inbox)
             limit: 最多返回邮件数
+            minutes: 时间窗口(分钟,只返回最近N分钟的邮件)
             
         Returns:
             list: 邮件列表
@@ -73,9 +74,18 @@ class OutlookGraphClient:
         if not self.access_token:
             self.connect()
         
+        # 计算时间过滤条件（UTC时间）
+        from datetime import datetime, timedelta
+        threshold = datetime.utcnow() - timedelta(minutes=minutes)
+        filter_time = threshold.strftime("%Y-%m-%dT%H:%M:%SZ")
+        
         headers = {'Authorization': f'Bearer {self.access_token}'}
         url = f"{self.graph_url}/me/mailFolders/{folder}/messages"
-        params = {'$top': limit, '$orderby': 'receivedDateTime DESC'}
+        params = {
+            '$filter': f'receivedDateTime ge {filter_time}',  # 时间过滤
+            '$orderby': 'receivedDateTime DESC',
+            '$top': limit
+        }
         
         try:
             r = requests.get(url, headers=headers, params=params, timeout=15)
@@ -145,7 +155,7 @@ class OutlookGraphClient:
             raise RuntimeError(f"获取邮件失败: {e}")
     
     def wait_for_message(self, sender_contains=None, timeout=120, interval=5):
-        """等待邮件到达"""
+        """等待邮件到达（检查 Inbox 和 Junk Email 两个文件夹）"""
         deadline = time.time() + timeout
         seen = set()
         
@@ -153,19 +163,49 @@ class OutlookGraphClient:
             r'(?i)(?:验证码|code|OTP|security code is)[：:\s]*([A-Z0-9]{6,8})'
         )
         
+        print(f"[Outlook Graph] 开始等待邮件 (超时{timeout}s, 间隔{interval}s)")
+        if sender_contains:
+            print(f"[Outlook Graph] 发件人过滤: {sender_contains}")
+        print(f"[Outlook Graph] 检查文件夹: Inbox + JunkEmail")
+        
+        attempt = 0
         while time.time() < deadline:
+            attempt += 1
             try:
-                messages = self.list_messages(limit=10)
+                # 同时检查 Inbox 和 JunkEmail 两个文件夹
+                all_messages = []
                 
-                for msg in messages:
+                # 检查 Inbox
+                try:
+                    inbox_messages = self.list_messages(folder="Inbox", limit=50, minutes=2)
+                    all_messages.extend(inbox_messages)
+                except Exception as e:
+                    print(f"[Outlook Graph] Inbox查询失败: {e}")
+                
+                # 检查 JunkEmail（垃圾邮件）
+                try:
+                    junk_messages = self.list_messages(folder="JunkEmail", limit=50, minutes=2)
+                    all_messages.extend(junk_messages)
+                except Exception as e:
+                    print(f"[Outlook Graph] JunkEmail查询失败: {e}")
+                
+                if attempt % 5 == 0:  # 每5次轮询打印一次
+                    remaining = int(deadline - time.time())
+                    print(f"[Outlook Graph] 第{attempt}次轮询,拉取{len(all_messages)}封最近邮件,剩余{remaining}s")
+                
+                for msg in all_messages:
                     mid = msg['id']
                     if mid in seen:
                         continue
                     seen.add(mid)
                     
                     frm = msg.get('from_address', '')
+                    
+                    # 检查发件人
                     if sender_contains and sender_contains.lower() not in frm.lower():
                         continue
+                    
+                    print(f"[Outlook Graph] 找到匹配邮件: from={frm}, subject={msg.get('subject', '')[:50]}")
                     
                     # 获取完整邮件
                     full_msg = self.get_message(mid)
@@ -175,11 +215,16 @@ class OutlookGraphClient:
                         match = code_pattern.search(text)
                         if match:
                             full_msg['_extracted_code'] = match.group(1)
+                            print(f"[Outlook Graph] 提取到验证码: {match.group(1)}")
                             break
                     
                     return full_msg
-            except:
-                pass
+            except Exception as e:
+                print(f"[Outlook Graph] 轮询出错: {e}")
+                # Token过期时重新获取
+                if '401' in str(e) or 'Unauthorized' in str(e):
+                    print("[Outlook Graph] Token可能过期,重新获取")
+                    self.access_token = None
             
             time.sleep(interval)
         
@@ -395,7 +440,7 @@ class OutlookClient:
     
     def wait_for_message(self, sender_contains=None, timeout=120, interval=5):
         """
-        等待邮件到达
+        等待邮件到达（检查 INBOX 和 Junk 两个文件夹）
         
         Args:
             sender_contains: 发件人包含的字符串(不区分大小写)
@@ -416,68 +461,95 @@ class OutlookClient:
             r'(?i)(?:验证码|code|OTP|security code is)[：:\s]*([A-Z0-9]{6,8})'
         )
         
+        print(f"[Outlook IMAP] 开始等待邮件 (超时{timeout}s, 间隔{interval}s)")
+        if sender_contains:
+            print(f"[Outlook IMAP] 发件人过滤: {sender_contains}")
+        print(f"[Outlook IMAP] 检查文件夹: INBOX + Junk")
+        
+        attempt = 0
         while time.time() < deadline:
+            attempt += 1
             try:
-                # 选择收件箱
-                self.mail.select("INBOX")
+                # 检查两个文件夹: INBOX 和 Junk
+                folders_to_check = ["INBOX", "Junk"]
                 
-                # 搜索最近的邮件
-                status, messages = self.mail.search(None, "ALL")
-                if status != "OK":
-                    time.sleep(interval)
-                    continue
-                
-                msg_ids = messages[0].split()
-                # 只检查最新的10封邮件
-                msg_ids = msg_ids[-10:]
-                
-                for msg_id in reversed(msg_ids):
-                    mid = msg_id.decode()
-                    if mid in seen:
-                        continue
-                    seen.add(mid)
-                    
+                for folder in folders_to_check:
                     try:
-                        # 获取邮件
-                        status, data = self.mail.fetch(msg_id, "(RFC822)")
+                        # 选择文件夹
+                        status, data = self.mail.select(folder)
+                        if status != "OK":
+                            print(f"[Outlook IMAP] 无法访问 {folder} 文件夹")
+                            continue
+                        
+                        # 搜索最近的邮件
+                        status, messages = self.mail.search(None, "ALL")
                         if status != "OK":
                             continue
                         
-                        msg = email.message_from_bytes(data[0][1])
-                        from_addr = self._decode_str(msg.get("From", ""))
+                        msg_ids = messages[0].split()
+                        # 只检查最新的10封邮件
+                        msg_ids = msg_ids[-10:]
                         
-                        # 检查发件人
-                        if sender_contains and sender_contains.lower() not in from_addr.lower():
-                            continue
-                        
-                        # 找到匹配的邮件,获取完整信息
-                        subject = self._decode_str(msg.get("Subject", ""))
-                        date = msg.get("Date", "")
-                        body, html_body = self._get_body(msg)  # 获取body和html
-                        
-                        full_msg = {
-                            "id": mid,
-                            "from_address": from_addr,
-                            "from": from_addr,
-                            "subject": subject,
-                            "received_at": date,
-                            "body": body,  # 优先HTML（包含链接）
-                            "text": re.sub(r'<[^>]+>', ' ', body) if html_body else body,  # 纯文本
-                            "html": html_body,  # HTML原文
-                        }
-                        
-                        # 尝试提取验证码
-                        for text in [subject, body]:
-                            match = code_pattern.search(text)
-                            if match:
-                                full_msg["_extracted_code"] = match.group(1)
-                                break
-                        
-                        return full_msg
-                    except:
+                        for msg_id in reversed(msg_ids):
+                            mid = f"{folder}:{msg_id.decode()}"
+                            if mid in seen:
+                                continue
+                            seen.add(mid)
+                            
+                            try:
+                                # 获取邮件
+                                status, data = self.mail.fetch(msg_id, "(RFC822)")
+                                if status != "OK":
+                                    continue
+                                
+                                msg = email.message_from_bytes(data[0][1])
+                                from_addr = self._decode_str(msg.get("From", ""))
+                                
+                                # 检查发件人
+                                if sender_contains and sender_contains.lower() not in from_addr.lower():
+                                    continue
+                                
+                                print(f"[Outlook IMAP] 在 {folder} 找到匹配邮件: from={from_addr}")
+                                
+                                # 找到匹配的邮件,获取完整信息
+                                subject = self._decode_str(msg.get("Subject", ""))
+                                date = msg.get("Date", "")
+                                body, html_body = self._get_body(msg)  # 获取body和html
+                                
+                                full_msg = {
+                                    "id": mid,
+                                    "from_address": from_addr,
+                                    "from": from_addr,
+                                    "subject": subject,
+                                    "received_at": date,
+                                    "body": body,  # 优先HTML（包含链接）
+                                    "text": re.sub(r'<[^>]+>', ' ', body) if html_body else body,  # 纯文本
+                                    "html": html_body,  # HTML原文
+                                }
+                                
+                                # 尝试提取验证码
+                                for text in [subject, body]:
+                                    match = code_pattern.search(text)
+                                    if match:
+                                        full_msg["_extracted_code"] = match.group(1)
+                                        print(f"[Outlook IMAP] 提取到验证码: {match.group(1)}")
+                                        break
+                                
+                                return full_msg
+                            except Exception as e:
+                                print(f"[Outlook IMAP] 处理邮件失败: {e}")
+                                continue
+                    
+                    except Exception as e:
+                        print(f"[Outlook IMAP] 检查 {folder} 文件夹失败: {e}")
                         continue
                 
+                if attempt % 5 == 0:
+                    remaining = int(deadline - time.time())
+                    print(f"[Outlook IMAP] 第{attempt}次轮询,剩余{remaining}s")
+                
             except Exception as e:
+                print(f"[Outlook IMAP] 轮询出错: {e}")
                 # 连接断开时重连
                 try:
                     self.disconnect()
@@ -503,16 +575,20 @@ def parse_outlook_line(line):
     """
     解析Outlook邮箱配置行
     
-    格式1(推荐): 邮箱----密码----ClientID----RefreshToken
-    格式2(简化): 邮箱----密码 (只用IMAP)
+    格式1(完整): 邮箱----密码----ClientID----RefreshToken----模式
+    格式2(简化): 邮箱----密码----ClientID----RefreshToken (自动模式)
+    格式3(仅密码): 邮箱----密码 (强制IMAP)
     
-    智能模式: 自动尝试Graph API → IMAP,使用第一个成功的方式
+    模式: imap/graph/auto (默认auto)
+    - imap: 强制使用IMAP
+    - graph: 强制使用Graph API
+    - auto: 智能选择(优先Graph)
     
     Args:
         line: 配置行字符串
         
     Returns:
-        dict: 包含email, password, client_id, refresh_token的字典
+        dict: 包含email, password, client_id, refresh_token, mode的字典
         
     Raises:
         ValueError: 格式错误时抛出
@@ -522,7 +598,7 @@ def parse_outlook_line(line):
     if len(parts) < 2:
         raise ValueError(
             f"格式错误,至少需要2部分:\n"
-            f"邮箱----密码----ClientID----RefreshToken (推荐)\n"
+            f"邮箱----密码----ClientID----RefreshToken----模式 (推荐)\n"
             f"或 邮箱----密码 (仅IMAP)\n"
             f"实际{len(parts)}部分"
         )
@@ -531,6 +607,7 @@ def parse_outlook_line(line):
     password = parts[1].strip() if len(parts) > 1 else ""
     client_id = parts[2].strip() if len(parts) > 2 else ""
     refresh_token = parts[3].strip() if len(parts) > 3 else ""
+    mode = parts[4].strip().lower() if len(parts) > 4 else "auto"
     
     if not email_addr or "@" not in email_addr:
         raise ValueError("邮箱地址无效")
@@ -539,9 +616,14 @@ def parse_outlook_line(line):
     if not password and not (client_id and refresh_token):
         raise ValueError("必须提供密码或ClientID+RefreshToken")
     
+    # 验证模式
+    if mode not in ["auto", "imap", "graph"]:
+        raise ValueError(f"模式无效: {mode}, 必须是 auto/imap/graph")
+    
     return {
         "email": email_addr,
         "password": password,
         "client_id": client_id,
-        "refresh_token": refresh_token
+        "refresh_token": refresh_token,
+        "mode": mode
     }

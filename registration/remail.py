@@ -249,15 +249,42 @@ class RemailClient:
         
         return self.token
     
-    def get_projects(self, offset=0, limit=100):
+    def get_projects(self, offset=0, limit=40, access_type=None, product_type=None):
         """
         查询项目列表(用于配置和调试)
+        
+        Args:
+            offset: 偏移量
+            limit: 返回数量上限
+            access_type: 访问类型, public(公共) 或 private(私有), 不传则返回全部
+            product_type: 产品类型, microsoft/google等, 不传则返回全部
         
         Returns:
             dict: 项目列表
         """
         url = f"{self.base}/v1/open/projects"
         params = {"offset": offset, "limit": limit}
+        
+        if access_type:
+            params["accessType"] = access_type
+        if product_type:
+            params["productType"] = product_type
+        
         return _request(self.s, "get", url, params=params)
+    
+    def get_product_suffixes(self, product_id):
+        """
+        获取产品可用后缀列表
+        
+        注意: 此方法已废弃,后缀信息已包含在 get_projects() 返回的产品数据中
+        
+        Args:
+            product_id: 产品ID
+        
+        Returns:
+            list: 后缀列表, 如 ["outlook.com", "hotmail.com", ...]
+        """
+        # 直接返回空列表,提示使用 get_projects() 获取完整信息
+        return []
 
 
